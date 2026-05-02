@@ -8,59 +8,6 @@ The transaction boundary is strict. Intent flows from human to system; evidence 
 
 In practice, you describe a capability boundary. A7-RT dispatches an agent with constrained context, receives structured output, validates against the declared contract, and either promotes the result to grounded status or suspends it with specific failure attribution. The repository remains untouched until the verification gate passes.
 
-This is infrastructure for the transition between experimentation, where ambiguity is productive, and production, where only proven code survives.
-
-## The Post-Exploration Gap
-
-AI coding assistants excel at exploration. They generate the 80% solution in minutes. Yet they accumulate broken state: hallucinated imports, tests that pass only in the model's imagination, and architectural decisions that collapse under their own weight. You do not have a bug; you have an infection cascade. Each generation compounds the hallucinations of the previous until your context window becomes a landfill of half-apologies and broken syntax.
-
-Current tools optimize for exploration velocity. None provide grounding infrastructure: the ability to freeze a sketch, verify its contracts in isolation, and converge to production code without the fragility of conversational state.
-
-A7-RT hardens the output of Cursor, Copilot, and Claude Desktop. Like a CI pipeline that uses generative AI as its compiler, it validates every artifact before it touches your working tree. Unlike CI, which validates after commit, A7-RT operates as a pre-commit gate.
-
-## The Mechanism: Adversarial Verification
-
-A7-RT orchestrates three agents in an adversarial loop:
-
-| Role | Job | Cardinal Rule |
-|------|-----|---------------|
-| **Test Author** | Writes tests, defines behavioral contracts | Cannot modify implementation |
-| **Builder** | Implements features | Cannot read test files—implements to contract only |
-| **Manager** | Sequences the dependency graph | No memory between turns—pure function from BoardView → Action |
-
-**The workflow:**
-1. Human seeds nodes with intent (description + interface contracts)
-2. **Test Author** dispatches first, writes tests, populates `test_contract` (Mode B)
-3. **Builder** implements against that contract, blind to tests
-4. **Harness** verifies through hard-path execution (compilation, tests) before commit
-5. **Manager** orchestrates dependency graph, handles poison cascade
-
-**Status progression:** `near` → `provisional` (schema valid) → `grounded` (tests pass). No self-declared status. No conversational drift. Each dispatch is stateless with computed context.
-
----
-
-## The Contract Modes: A and B
-
-Every node in A7-RT operates in one of two contract modes. This distinction governs what the agents can and cannot do, creating clear boundaries between specification and implementation.
-
-### Mode A: Contract Validation (Exports Populated)
-
-The interface is **fixed**. The human has declared the API surface through `interface.exports`—function signatures, class definitions, type specifications. The test author's job is not to invent but to *validate*: write tests that exercise the declared surface, document edge cases, and ensure the contract is machine-verifiable.
-
-The builder receives the same exports and implements exactly those signatures. No creative renaming. No "I thought this was clearer." The contract is the specification; the code must conform.
-
-### Mode B: Contract Definition (Exports Empty)
-
-The interface is **emergent**. The human has provided behavioral intent—a description of what the node should do—but no concrete API. The test author becomes the architect: deriving exports from the description, specifying the surface that would satisfy the intent, and documenting it in `test_contract`.
-
-The builder then implements against that freshly-minted contract. The test author has defined the goalposts; the builder's job is to hit them.
-
-### Why the Separation
-
-This is not pedantry. It is the difference between a system that composes and one that drifts.
-
-In Mode A, downstream nodes can import `from matcher.engine import MatcherEngine` with confidence because the contract was visible when they were written. In Mode B without the mode distinction, a test author might rename the class mid-implementation, and suddenly every dependent node has a broken import. The mode is a coordination mechanism: it tells every agent what is negotiable and what is law.
-
 ---
 
 # Stage 1 Proof of Concept: The Core Layer
@@ -101,7 +48,7 @@ This section documents a complete execution of the A7-RT harness, building the 8
                        └───────────────────┘
 ```
 
-Eight feature nodes, 29 structural dependencies. No glue—this is pure library code with zero I/O.
+Eight feature nodes, 29 structural dependencies. No glue, this is pure library code with zero I/O.
 
 ## Execution Telemetry
 
