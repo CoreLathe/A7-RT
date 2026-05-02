@@ -1,0 +1,56 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "A7-RT Subagent Return Validation Rules",
+  "description": "Role-based field validation schemas for subagent returns",
+  "version": "1.0.0",
+  "required_fields": {
+    "builder": {
+      "fields": [
+        "node_id",
+        "status"
+      ],
+      "description": "Builder must return node_id and status"
+    },
+    "test_author": {
+      "fields": [
+        "node_id",
+        "test_script"
+      ],
+      "description": "Test author must return node_id and test_script"
+    },
+    "analyst": {
+      "fields": [
+        "query",
+        "verdict"
+      ],
+      "description": "Analyst must return query and verdict"
+    }
+  },
+  "nonnull_fields": {
+    "builder": {
+      "fields": [
+        "node_id",
+        "status"
+      ],
+      "description": "Builder node_id and status must be non-null"
+    },
+    "test_author": {
+      "fields": [
+        "node_id"
+      ],
+      "description": "Test author node_id must be non-null (test_script can be null)"
+    },
+    "analyst": {
+      "fields": [
+        "query",
+        "verdict"
+      ],
+      "description": "Analyst query and verdict must be non-null"
+    }
+  },
+  "role_descriptions": {
+    "builder": "Implements features and glue nodes",
+    "test_author": "Writes test scripts for builder nodes",
+    "analyst": "Examines nodes/projects for contradictions"
+  }
+}

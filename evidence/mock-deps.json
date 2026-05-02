@@ -1,0 +1,39 @@
+[
+  { "from": "core.orchestrator", "to": "types.core", "type": "structural" },
+  { "from": "core.orchestrator", "to": "matcher.engine", "type": "structural" },
+  {
+    "from": "core.orchestrator",
+    "to": "responder.engine",
+    "type": "structural"
+  },
+  { "from": "core.orchestrator", "to": "state.store", "type": "structural" },
+  { "from": "matcher.parser", "to": "types.core", "type": "structural" },
+  { "from": "matcher.engine", "to": "types.core", "type": "structural" },
+  { "from": "matcher.engine", "to": "matcher.parser", "type": "structural" },
+  { "from": "responder.template", "to": "types.core", "type": "structural" },
+  { "from": "responder.engine", "to": "types.core", "type": "structural" },
+  {
+    "from": "responder.engine",
+    "to": "responder.template",
+    "type": "structural"
+  },
+  { "from": "responder.engine", "to": "state.store", "type": "structural" },
+  { "from": "state.store", "to": "types.core", "type": "structural" },
+  { "from": "openapi.loader", "to": "types.core", "type": "structural" },
+  { "from": "openapi.loader", "to": "matcher.parser", "type": "structural" },
+  { "from": "http.server", "to": "types.core", "type": "structural" },
+  { "from": "http.server", "to": "config.schema", "type": "structural" },
+  { "from": "admin.api.v2", "to": "types.core", "type": "structural" },
+  { "from": "admin.api.v2", "to": "matcher.engine", "type": "structural" },
+  { "from": "admin.api.v2", "to": "responder.engine", "type": "structural" },
+  { "from": "admin.api.v2", "to": "state.store", "type": "structural" },
+  { "from": "cli.runner", "to": "config.schema", "type": "structural" },
+  { "from": "cli.runner", "to": "system.init", "type": "structural" },
+  { "from": "system.init", "to": "types.core", "type": "structural" },
+  { "from": "system.init", "to": "matcher.engine", "type": "structural" },
+  { "from": "system.init", "to": "responder.engine", "type": "structural" },
+  { "from": "system.init", "to": "state.store", "type": "structural" },
+  { "from": "system.init", "to": "openapi.loader", "type": "structural" },
+  { "from": "system.init", "to": "http.server", "type": "structural" },
+  { "from": "system.init", "to": "admin.api.v2", "type": "structural" }
+]

@@ -1,0 +1,108 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "A7-RT Analyst Return Schema",
+  "description": "Schema for analyst subagent returns",
+  "type": "object",
+  "required": [
+    "query",
+    "verdict"
+  ],
+  "properties": {
+    "query": {
+      "type": "string",
+      "description": "The question being examined"
+    },
+    "verdict": {
+      "type": "string",
+      "description": "Analysis conclusion"
+    },
+    "scope": {
+      "type": "string",
+      "enum": [
+        "node",
+        "project",
+        "external"
+      ]
+    },
+    "target_nodes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "findings": {
+      "type": "object",
+      "properties": {
+        "summary": {
+          "type": "string"
+        },
+        "details": {
+          "type": "object",
+          "properties": {
+            "contract_fidelity": {
+              "type": "string",
+              "enum": [
+                "matches",
+                "deviates",
+                "divergent",
+                "n/a"
+              ]
+            },
+            "contradictions": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "patterns": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "risks": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "contract_fidelity",
+            "contradictions",
+            "patterns",
+            "risks"
+          ]
+        }
+      },
+      "required": [
+        "summary",
+        "details"
+      ]
+    },
+    "confidence": {
+      "type": "string",
+      "enum": [
+        "examined",
+        "inferred",
+        "sourced"
+      ]
+    },
+    "recommendations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "conflicts": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "escalate": {
+      "type": "boolean",
+      "default": false
+    }
+  }
+}

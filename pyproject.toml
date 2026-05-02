@@ -1,0 +1,80 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "a7-rt-core"
+version = "0.1.0"
+description = "Minimal Combinatory Palette for agent-driven development"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+authors = [
+    {name = "A7-RT Contributors"},
+]
+keywords = ["llm", "agent", "orchestration", "code-generation", "verification"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Software Development :: Code Generators",
+]
+
+dependencies = [
+    "pydantic>=2.0",
+    "openai>=1.0",
+    "toml",
+    "tree-sitter",
+    "tree-sitter-python",
+    "semgrep",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio",
+    "mypy",
+    "ruff",
+]
+
+# Note: Entry points require proper installation.
+# For development, use: PYTHONPATH=/path/to/project python -m a7_rt_core.cli
+[project.scripts]
+a7-rt = "a7_rt_core.cli.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/Quantaform/a7-rt-core"
+Documentation = "https://github.com/Quantaform/a7-rt-core/blob/main/README.md"
+Repository = "https://github.com/Quantaform/a7-rt-core.git"
+
+# Project uses SRC LAYOUT (package is in src/a7_rt_core/)
+# This enables proper editable installs: pip install -e .
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.pytest.ini_options]
+testpaths = ["src/a7_rt_core/tests"]
+pythonpath = ["src"]
+addopts = "-v --tb=short"
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N"]
+ignore = ["E501"]

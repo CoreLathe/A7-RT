@@ -1,0 +1,119 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "A7-RT Builder Return Schema",
+  "description": "Expected return structure from builder role subagent",
+  "version": "1.0.0",
+  "type": "object",
+  "required": [
+    "node_id",
+    "status"
+  ],
+  "properties": {
+    "node_id": {
+      "type": "string",
+      "description": "The node ID being built"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "near",
+        "provisional",
+        "grounded",
+        "suspended"
+      ]
+    },
+    "content": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Legacy single-file content"
+    },
+    "files": {
+      "type": "object",
+      "description": "Multi-file content map"
+    },
+    "interface": {
+      "type": "object",
+      "properties": {
+        "exports": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "assumptions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "raises": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "guarantees": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "dependencies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "node_id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "structural",
+              "assumption"
+            ]
+          }
+        },
+        "required": [
+          "node_id",
+          "type"
+        ]
+      }
+    },
+    "suspension_reason": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "near",
+            "far",
+            "void",
+            "wild"
+          ]
+        },
+        "detail": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "detail"
+      ]
+    },
+    "escalate": {
+      "type": "boolean",
+      "default": false
+    },
+    "pr_note": {
+      "type": "string"
+    },
+    "test_contract": {
+      "type": "string"
+    }
+  }
+}

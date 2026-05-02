@@ -1,0 +1,319 @@
+{
+  "version": "1.0.0",
+  "description": "Manager action schemas for A7-RT board control. All actions require intent. DISPATCH, REDISPATCH, and COMMIT additionally require manager_note. INLINED for Fireworks compatibility (no $ref).",
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "submit_action",
+        "description": "Submit exactly one manager action for the current turn. The harness validates the action against live board state and rejects invalid actions with last_error. Use OBSERVE/DECIDE format in content, then call this tool with structured parameters.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "action_type": {
+              "type": "string",
+              "enum": [
+                "DISPATCH",
+                "REDISPATCH",
+                "VALIDATE",
+                "COMMIT",
+                "SUSPEND",
+                "CONSULT",
+                "UPDATE_PLAN",
+                "SEAL",
+                "HALT"
+              ],
+              "description": "Action to execute. Must be one of the 9 valid opcodes."
+            },
+            "parameters": {
+              "oneOf": [
+                {
+                  "title": "DispatchParams",
+                  "type": "object",
+                  "description": "DISPATCH: Send a ready node to a subagent for work. Node must be in board.ready.",
+                  "properties": {
+                    "node_id": {
+                      "type": "string",
+                      "description": "ID of node to dispatch. Must be present in board.ready."
+                    },
+                    "role": {
+                      "type": "string",
+                      "enum": ["builder", "test_author", "analyst"],
+                      "description": "REQUIRED role selection by node status: near+feature→test_author (contract MUST be defined first), provisional→builder, glue/test→builder, [ANALYZE]→analyst. CRITICAL: Dispatching builder on near+feature will fail—test_author must create test contract before builder can implement."
+                    },
+                    "weight": {
+                      "type": "string",
+                      "enum": ["none", "lean", "full", "a7"],
+                      "description": "Protocol weight. none=ceiling provisional, lean=default, full=escalated, a7=analyst only. Escalate if prior escalate:true, >5 dependents, or avg_iterations>3."
+                    },
+                    "intent": {
+                      "type": "string",
+                      "description": "Required. One sentence: what you're doing and why. Example: 'Highest ready node, no tests yet'."
+                    },
+                    "manager_note": {
+                      "type": "string",
+                      "description": "Required strategic guidance to subagent. What to check, retry approach, or concerns. Example: 'Check error handling'."
+                    },
+                    "focus_hints": {
+                      "type": "array",
+                      "items": { "type": "string" },
+                      "description": "Optional. Specific aspects to focus on during dispatch."
+                    },
+                    "view_spec": {
+                      "type": "object",
+                      "description": "Optional. View specification for context assembly.",
+                      "properties": {
+                        "target_fidelity": { "type": "string" },
+                        "struct_dep_fidelity": { "type": "string" }
+                      }
+                    },
+                    "clear_findings": {
+                      "type": "boolean",
+                      "description": "Optional. Clear prior analyst findings for this node."
+                    },
+                    "scope": {
+                      "type": "string",
+                      "enum": ["node", "project", "external"],
+                      "description": "Required for analyst role. Examination scope."
+                    },
+                    "query": {
+                      "type": "string",
+                      "description": "Required for analyst role. Question to investigate."
+                    },
+                    "target_nodes": {
+                      "type": "array",
+                      "items": { "type": "string" },
+                      "description": "For analyst role. Node IDs to examine."
+                    }
+                  },
+                  "required": [
+                    "node_id",
+                    "role",
+                    "weight",
+                    "intent",
+                    "manager_note"
+                  ]
+                },
+                {
+                  "title": "RedispatchParams",
+                  "type": "object",
+                  "description": "REDISPATCH: Retry a failed or poisoned node. Node must be in valid_dispatch_targets. Never REDISPATCH if wild_counts[node_id] >= 2.",
+                  "properties": {
+                    "node_id": {
+                      "type": "string",
+                      "description": "ID of node to redispatch. Must be in board.valid_dispatch_targets or be a poisoned root."
+                    },
+                    "role": {
+                      "type": "string",
+                      "enum": ["builder", "test_author", "analyst"],
+                      "description": "Subagent role for retry."
+                    },
+                    "weight": {
+                      "type": "string",
+                      "enum": ["none", "lean", "full", "a7"],
+                      "description": "Protocol weight for retry. Do not de-escalate without human approval."
+                    },
+                    "intent": {
+                      "type": "string",
+                      "description": "Required. Goal of redispatch."
+                    },
+                    "manager_note": {
+                      "type": "string",
+                      "description": "Required. What failed and what to do differently."
+                    },
+                    "clear_findings": {
+                      "type": "boolean",
+                      "description": "Optional. Clear prior analyst findings before redispatch."
+                    }
+                  },
+                  "required": [
+                    "node_id",
+                    "role",
+                    "weight",
+                    "intent",
+                    "manager_note"
+                  ]
+                },
+                {
+                  "title": "ValidateParams",
+                  "type": "object",
+                  "description": "VALIDATE: Accept a subagent return from pending_returns. Runs schema validation.",
+                  "properties": {
+                    "node_id": {
+                      "type": "string",
+                      "description": "ID of node to validate. Must be in board.pending_returns."
+                    },
+                    "intent": {
+                      "type": "string",
+                      "description": "Required. Goal of validation."
+                    }
+                  },
+                  "required": ["node_id", "intent"]
+                },
+                {
+                  "title": "CommitParams",
+                  "type": "object",
+                  "description": "COMMIT: Finalize a node from pending_commits. Address analyst_findings before COMMIT grounded.",
+                  "properties": {
+                    "node_id": {
+                      "type": "string",
+                      "description": "ID of node to commit. Must be in board.pending_commits."
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": ["grounded", "provisional", "suspended"],
+                      "description": "Target status. grounded=implementation complete, provisional=test contract defined, suspended=blocked."
+                    },
+                    "reason": {
+                      "type": "string",
+                      "description": "Required. Explanation for commit decision."
+                    },
+                    "intent": {
+                      "type": "string",
+                      "description": "Required. Goal of commit."
+                    },
+                    "manager_note": {
+                      "type": "string",
+                      "description": "Optional additional context for commit."
+                    },
+                    "clear_findings": {
+                      "type": "boolean",
+                      "description": "Optional. Clear analyst findings after commit."
+                    }
+                  },
+                  "required": ["node_id", "status", "reason", "intent"]
+                },
+                {
+                  "title": "SuspendParams",
+                  "type": "object",
+                  "description": "SUSPEND: Block a node due to external dependency or epistemic limit.",
+                  "properties": {
+                    "node_id": {
+                      "type": "string",
+                      "description": "ID of node to suspend."
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": ["near", "far", "void", "wild"],
+                      "description": "near=dependency not grounded, far=external data needed, void=no implementable surface, wild=schema failure."
+                    },
+                    "detail": {
+                      "type": "string",
+                      "description": "Required. Specific blocker explanation."
+                    },
+                    "intent": {
+                      "type": "string",
+                      "description": "Required. Goal of suspension."
+                    }
+                  },
+                  "required": ["node_id", "type", "detail", "intent"]
+                },
+                {
+                  "title": "ConsultParams",
+                  "type": "object",
+                  "description": "CONSULT: Ask A7 oracle for architectural guidance. Do not CONSULT twice without reading pending_consult verdict.",
+                  "properties": {
+                    "question": {
+                      "type": "string",
+                      "description": "Required. Question for oracle."
+                    },
+                    "relevant_node_ids": {
+                      "type": "array",
+                      "items": { "type": "string" },
+                      "description": "Node IDs relevant to the question."
+                    },
+                    "constraints": {
+                      "type": "array",
+                      "items": { "type": "string" },
+                      "description": "Optional hard constraints."
+                    },
+                    "intent": {
+                      "type": "string",
+                      "description": "Required. Goal of consultation."
+                    }
+                  },
+                  "required": ["question", "relevant_node_ids", "intent"]
+                },
+                {
+                  "title": "UpdatePlanParams",
+                  "type": "object",
+                  "description": "UPDATE_PLAN: Update manager planning state with narrative and/or checklist.",
+                  "properties": {
+                    "narrative": {
+                      "type": "string",
+                      "description": "Optional. Planning narrative describing current approach."
+                    },
+                    "checklist": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "text": { "type": "string" },
+                          "status": {
+                            "type": "string",
+                            "enum": ["pending", "satisfied", "void"]
+                          }
+                        },
+                        "required": ["text", "status"]
+                      },
+                      "description": "Optional. Checklist items with status."
+                    },
+                    "intent": {
+                      "type": "string",
+                      "description": "Required. Goal of plan update."
+                    }
+                  },
+                  "required": ["intent"]
+                },
+                {
+                  "title": "SealParams",
+                  "type": "object",
+                  "description": "SEAL: Complete and archive current stage. Preconditions: No near nodes, no unverified assumption edges, pending_returns empty, pending_commits empty.",
+                  "properties": {
+                    "summary": {
+                      "type": "string",
+                      "description": "Required. Summary of stage completion."
+                    },
+                    "intent": {
+                      "type": "string",
+                      "description": "Required. Goal of SEAL."
+                    }
+                  },
+                  "required": ["summary", "intent"]
+                },
+                {
+                  "title": "HaltParams",
+                  "type": "object",
+                  "description": "HALT: Stop execution. Use when: invariant violated, no valid action, wild_counts >= 2, contradictory CONSULT verdict, max_turns approaching.",
+                  "properties": {
+                    "reason": {
+                      "type": "string",
+                      "description": "Required. Why execution must stop."
+                    },
+                    "invariant": {
+                      "type": "string",
+                      "description": "Optional. Specific invariant violated if applicable."
+                    },
+                    "intent": {
+                      "type": "string",
+                      "description": "Required. Goal of HALT."
+                    }
+                  },
+                  "required": ["reason", "intent"]
+                }
+              ],
+              "description": "Action-specific parameters. Structure depends on action_type. All actions require 'intent'. DISPATCH/REDISPATCH/COMMIT additionally require 'manager_note'."
+            }
+          },
+          "required": ["action_type", "parameters"]
+        }
+      }
+    }
+  ],
+  "tool_choice": {
+    "type": "function",
+    "function": {
+      "name": "submit_action"
+    }
+  }
+}

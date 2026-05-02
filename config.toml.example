@@ -1,0 +1,162 @@
+# A7-RT Configuration Example
+# ===========================
+# Copy this file to config.toml and uncomment/configure as needed.
+# Only ONE provider section needs to be configured to get started.
+# Models reference providers, so configure provider first, then models.
+
+# ============================================================
+# ROLE-TO-MODEL MAPPING
+# Set which models to use for each role.
+# Values reference [models.X] sections defined below.
+# ============================================================
+
+# manager_model = "claude-sonnet"
+# subagent_model = "claude-haiku"
+
+# NOTE: Manager role auto-disables thinking (reasoning.effort: "none") for
+# compatibility with tool_choice forcing. Subagent roles can use thinking.
+# For non-OpenRouter providers, you may need to configure extra_body per model.
+
+# ============================================================
+# PROVIDER CONFIGURATION
+# Uncomment ONE section below and fill in your API key.
+# ============================================================
+
+# -----------------------------------------------------------
+# OPTION 1: OpenRouter (recommended - access multiple providers)
+# Get key at: https://openrouter.ai/keys
+# -----------------------------------------------------------
+# [providers.openrouter]
+# base_url = "https://openrouter.ai/api/v1"
+# api_key = "sk-or-..."
+# # api_key_env = "OPENROUTER_API_KEY"  # Alternative: use env var
+
+# [models.claude-sonnet]
+# provider = "openrouter"
+# model_id = "anthropic/claude-sonnet-4-6"
+# max_tokens = 4096
+
+# [models.claude-opus]
+# provider = "openrouter"
+# model_id = "anthropic/claude-opus-4"
+# max_tokens = 4096
+
+# [models.claude-haiku]
+# provider = "openrouter"
+# model_id = "anthropic/claude-haiku-4-5"
+# max_tokens = 4096
+
+
+# -----------------------------------------------------------
+# OPTION 2: Anthropic (direct)
+# Get key at: https://console.anthropic.com/settings/keys
+# -----------------------------------------------------------
+# [providers.anthropic]
+# base_url = "https://api.anthropic.com/v1"
+# api_key = "sk-ant-..."
+# # api_key_env = "ANTHROPIC_API_KEY"
+
+# [models.claude-sonnet]
+# provider = "anthropic"
+# model_id = "claude-sonnet-4-6-20250514"
+# max_tokens = 4096
+
+
+# -----------------------------------------------------------
+# OPTION 3: OpenAI
+# Get key at: https://platform.openai.com/api-keys
+# -----------------------------------------------------------
+# [providers.openai]
+# base_url = "https://api.openai.com/v1"
+# api_key = "sk-..."
+# # api_key_env = "OPENAI_API_KEY"
+
+# [models.gpt-4o]
+# provider = "openai"
+# model_id = "gpt-4o"
+# max_tokens = 4096
+
+
+# -----------------------------------------------------------
+# OPTION 4: Moonshot (Kimi)
+# Get key at: https://platform.moonshot.cn/console/api-keys
+# -----------------------------------------------------------
+# [providers.moonshot]
+# base_url = "https://api.moonshot.cn/v1"
+# api_key = "..."
+# # api_key_env = "MOONSHOT_API_KEY"
+# # inter_call_delay_ms = 1000  # 1 second between calls (Moonshot: 60-120 RPM limit)
+
+# [models.kimi-k2-5]
+# provider = "moonshot"
+# model_id = "moonshot-v1-128k"
+# max_tokens = 4096
+
+
+# -----------------------------------------------------------
+# OPTION 5: Local/Ollama
+# No API key needed - runs locally
+# -----------------------------------------------------------
+# [providers.ollama]
+# base_url = "http://localhost:11434/v1"
+# api_key = "ollama"  # Required but ignored by Ollama
+
+# [models.llama3]
+# provider = "ollama"
+# model_id = "llama3.1:latest"
+# max_tokens = 4096
+
+
+# -----------------------------------------------------------
+# OPTION 6: Local/LM Studio
+# No API key needed - runs locally
+# -----------------------------------------------------------
+
+# ============================================================
+# ADVANCED: extra_body for Thinking Model Control
+# ============================================================
+# For providers that support thinking/reasoning (OpenRouter, OpenAI, etc.),
+# you can explicitly disable or configure thinking per model.
+#
+# Manager auto-injects reasoning.effort: "none", but you can override:
+#
+# [models.kimi-k2-5]
+# provider = "openrouter"
+# model_id = "moonshotai/kimi-k2.5"
+# max_tokens = 4096
+# extra_body = { reasoning = { effort = "none" } }  # Disable thinking
+#
+# For subagent models, thinking is enabled by default (beneficial for coding).
+# To enable thinking on a subagent model:
+#
+# [models.kimi-k2-5-thinking]
+# provider = "openrouter"
+# model_id = "moonshotai/kimi-k2.5"
+# max_tokens = 4096
+# # No extra_body needed - thinking enabled by default
+# [providers.lmstudio]
+# base_url = "http://localhost:1234/v1"
+# api_key = "lm-studio"  # Required but ignored by LM Studio
+
+# [models.local]
+# provider = "lmstudio"
+# model_id = "local-model"  # LM Studio handles model selection
+# max_tokens = 4096
+
+
+# ============================================================
+# SESSION DEFAULTS
+# Adjust these if you need different defaults
+# ============================================================
+
+# default_max_turns = 25
+# default_drain_turn = 20
+# provisional_depth_limit = 3
+
+# ============================================================
+# FEATURE FLAGS
+# ============================================================
+
+# auto_validate = true
+# auto_commit = true
+# use_shadowfs = true

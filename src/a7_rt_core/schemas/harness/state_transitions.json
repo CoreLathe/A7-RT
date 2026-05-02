@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "A7-RT Node Status Transitions",
+  "description": "Valid state transitions for A7-RT nodes. Poison (POISONED) is always a valid destination.",
+  "transitions": {
+    "near": {
+      "valid_next": ["provisional", "grounded", "poisoned", "suspended"],
+      "description": "Initial state - one step away from grounded"
+    },
+    "provisional": {
+      "valid_next": ["grounded", "poisoned", "suspended"],
+      "description": "Tests written but implementation pending"
+    },
+    "grounded": {
+      "valid_next": ["poisoned"],
+      "description": "Implementation complete with passing tests"
+    },
+    "poisoned": {
+      "valid_next": ["near"],
+      "description": "Terminal state - node failed validation (roots can be unpoisoned for retry)"
+    },
+    "suspended": {
+      "valid_next": ["near", "grounded", "poisoned", "provisional"],
+      "description": "Blocked pending external resolution"
+    }
+  },
+  "invariants": [
+    "Poison is always a valid destination from any state",
+    "Grounded is terminal except for cross-stage poison",
+    "Suspended can return to near for retry"
+  ]
+}

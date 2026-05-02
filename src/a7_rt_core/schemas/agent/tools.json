@@ -1,0 +1,633 @@
+{
+  "version": "1.0.0",
+  "description": "Agent tool schemas for OpenAI function calling",
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "read_file",
+        "description": "Read the contents of a file relative to the content directory",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "Relative path to the file, e.g., 'auth/handler.py'"
+            },
+            "intent": {
+              "type": "string",
+              "description": "Optional: why you are reading this file (helps with session reconstruction)"
+            }
+          },
+          "required": ["path"]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "grep_content",
+        "description": "Search file contents with a regex pattern",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "pattern": {
+              "type": "string",
+              "description": "Regex pattern to search for, e.g., 'def authenticate'"
+            },
+            "intent": {
+              "type": "string",
+              "description": "Optional: why you are searching (helps with session reconstruction)"
+            }
+          },
+          "required": ["pattern"]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "list_files",
+        "description": "List files matching a glob pattern",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "glob": {
+              "type": "string",
+              "description": "Glob pattern like '**/*.py' or 'auth/*.py'. Default is '**/*'",
+              "default": "**/*"
+            },
+            "intent": {
+              "type": "string",
+              "description": "Optional: why you are listing files (helps with session reconstruction)"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "create_directory",
+        "description": "Create a directory (and parent directories) in the shadow layer. Use for establishing package structure before writing files. Idempotent - safe to call if directory already exists.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "Directory path relative to content_dir, e.g., 'types' or 'matcher'"
+            },
+            "intent": {
+              "type": "string",
+              "description": "Optional: why you are creating this directory"
+            }
+          },
+          "required": ["path"]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "preview_file",
+        "description": "Read partial file content with line numbers. Use after grep to read around matches.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "Relative path to the file, e.g., 'auth/handler.py'"
+            },
+            "offset": {
+              "type": "integer",
+              "description": "0-indexed starting line (default 0)",
+              "default": 0
+            },
+            "max_lines": {
+              "type": "integer",
+              "description": "Maximum lines to return, capped at 200 (default 50)",
+              "default": 50
+            },
+            "intent": {
+              "type": "string",
+              "description": "Optional: why you are previewing this region (helps with session reconstruction)"
+            }
+          },
+          "required": ["path"]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "write_file",
+        "description": "Write or overwrite a file in the shadow layer. Changes are isolated until submit_pr.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "Relative path to write, e.g., 'auth/handler.py'"
+            },
+            "content": {
+              "type": "string",
+              "description": "File content to write"
+            },
+            "intent": {
+              "type": "string",
+              "description": "Optional: why you are writing this file"
+            }
+          },
+          "required": ["path", "content"]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "delete_file",
+        "description": "Delete a file in the shadow layer. The file is marked deleted but live files are untouched until submit_pr.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "Relative path to delete, e.g., 'old_module.py'"
+            },
+            "intent": {
+              "type": "string",
+              "description": "Optional: why you are deleting this file"
+            }
+          },
+          "required": ["path"]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "rename_file",
+        "description": "Rename a file in the shadow layer. The rename is staged but live files are untouched until submit_pr.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "old_path": {
+              "type": "string",
+              "description": "Current relative path, e.g., 'old_name.py'"
+            },
+            "new_path": {
+              "type": "string",
+              "description": "New relative path, e.g., 'new_name.py'"
+            },
+            "intent": {
+              "type": "string",
+              "description": "Optional: why you are renaming this file"
+            }
+          },
+          "required": ["old_path", "new_path"]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "mv",
+        "description": "Alias for rename_file. Move or rename a file in the shadow layer.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "old_path": {
+              "type": "string",
+              "description": "Current relative path, e.g., 'old_name.py'"
+            },
+            "new_path": {
+              "type": "string",
+              "description": "New relative path, e.g., 'subdir/new_name.py'"
+            },
+            "intent": {
+              "type": "string",
+              "description": "Optional: why you are moving this file"
+            }
+          },
+          "required": ["old_path", "new_path"]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "run_test",
+        "description": "Run the test file for the current node against shadow state. MUST call this and see passed:true before submitting grounded.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "intent": {
+              "type": "string",
+              "description": "Optional: why you are running tests now"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "edit_file",
+        "description": "Apply line-addressed edits to a file. Use for surgical modifications (< 20% file change). Operations validated and applied atomically.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "Relative path to edit, e.g., 'auth/handler.py'"
+            },
+            "content_hash": {
+              "type": "string",
+              "description": "SHA256 hash from read_file/preview_file header (MUST match current content)"
+            },
+            "operations": {
+              "type": "array",
+              "description": "Line-addressed operations (applied in reverse line order automatically)",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": ["replace", "insert", "delete"],
+                    "description": "Operation type"
+                  },
+                  "start": {
+                    "type": "integer",
+                    "description": "Start line (1-indexed, inclusive) for replace/delete"
+                  },
+                  "end": {
+                    "type": "integer",
+                    "description": "End line (1-indexed, inclusive) for replace/delete"
+                  },
+                  "after": {
+                    "type": "integer",
+                    "description": "Insert after this line (0 = prepend); for insert only"
+                  },
+                  "lines": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Replacement/insertion lines (for replace/insert)"
+                  }
+                },
+                "required": ["type"]
+              }
+            },
+            "intent": {
+              "type": "string",
+              "description": "Optional: why you are editing this file"
+            }
+          },
+          "required": ["path", "content_hash", "operations"]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "edit_files",
+        "description": "Atomically apply edits to multiple files. All validations pass before any mutations. Use for coordinated multi-file changes.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "edits": {
+              "type": "array",
+              "description": "List of file edits to apply atomically",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "description": "Relative path to edit"
+                  },
+                  "content_hash": {
+                    "type": "string",
+                    "description": "Expected SHA256 hash of current content"
+                  },
+                  "operations": {
+                    "type": "array",
+                    "description": "Line-addressed operations for this file",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": ["replace", "insert", "delete"]
+                        },
+                        "start": {
+                          "type": "integer"
+                        },
+                        "end": {
+                          "type": "integer"
+                        },
+                        "after": {
+                          "type": "integer"
+                        },
+                        "lines": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "required": ["type"]
+                    }
+                  }
+                },
+                "required": ["path", "content_hash", "operations"]
+              }
+            },
+            "intent": {
+              "type": "string",
+              "description": "Optional: why you are batch editing"
+            }
+          },
+          "required": ["edits"]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "run_lint",
+        "description": "Run semgrep linter on shadow state. Call after editing, before testing. Errors block, warnings surface.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "paths": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Files to lint (default: all shadow writes)"
+            },
+            "language": {
+              "type": "string",
+              "description": "Language override (default: auto-detect from extensions)"
+            },
+            "intent": {
+              "type": "string",
+              "description": "Optional: why you are running lint now"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "get_current_state",
+        "description": "Get summary of current shadow state: files written, test status, and recorded thoughts. Use to re-contextualize without re-reading all files.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "intent": {
+              "type": "string",
+              "description": "Optional: why you are checking state"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "record_thought",
+        "description": "Record structured reasoning for warm redispatch. Use to capture hypotheses, contradictions, plans, or questions.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "thought": {
+              "type": "string",
+              "description": "The reasoning to record (max 500 chars)",
+              "maxLength": 500
+            },
+            "category": {
+              "type": "string",
+              "enum": ["hypothesis", "contradiction", "plan", "question"],
+              "description": "Type of reasoning"
+            },
+            "relates_to": {
+              "type": "string",
+              "description": "Optional file path or node_id this relates to"
+            },
+            "intent": {
+              "type": "string",
+              "description": "Optional: why you are recording this thought"
+            }
+          },
+          "required": ["thought", "category"]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "submit_pr",
+        "description": "Submit the final PR package to complete the task. INVARIANT: status=grounded requires non-empty files object with actual file content. The system WILL REJECT grounded submissions with empty/missing files. Always write files using write_file() before submit_pr(). NOTE: Files written via write_file() are automatically captured if you omit the files parameter.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": ["grounded", "provisional", "suspended"],
+              "description": "Status to assign to this node. 'grounded'=implementation complete with non-empty files. 'provisional'=tests written, needs implementation. 'suspended'=blocked. INVARIANT: grounded requires files with content."
+            },
+            "interface": {
+              "type": "object",
+              "properties": {
+                "exports": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "List of exported functions/classes"
+                },
+                "assumptions": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "List of assumptions made"
+                }
+              }
+            },
+            "files": {
+              "type": "object",
+              "description": "REQUIRED when status=grounded. Map of file paths to file content strings. Must be non-empty for grounded. If omitted, files written via write_file() during this session are automatically included. Example: {\"{node_id}.py\": \"def hello():...\"}. Recommended: Call write_file() for each file, then submit_pr() without files parameter."
+            },
+            "file_tags": {
+              "type": "array",
+              "description": "Tags to attach to files for experiential knowledge capture",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "node_id": {
+                    "type": "string",
+                    "description": "Target node ID this tag annotates"
+                  },
+                  "category": {
+                    "type": "string",
+                    "enum": ["quirk", "order", "scope", "perf", "warning"],
+                    "description": "Tag category: quirk=behavioral gotcha, order=initialization sequence, scope=lifecycle constraint, perf=performance note, warning=caution"
+                  },
+                  "content": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "description": "The experiential note (max 200 chars)"
+                  },
+                  "propagate": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Whether tag appears in views of dependent nodes"
+                  }
+                },
+                "required": ["node_id", "category", "content"]
+              }
+            },
+            "escalate": {
+              "type": "boolean",
+              "description": "Request escalation to higher protocol weight",
+              "default": false
+            },
+            "suspension_reason": {
+              "type": "object",
+              "description": "Required if status is suspended",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": ["near", "far", "void", "wild"]
+                },
+                "detail": {
+                  "type": "string"
+                }
+              }
+            },
+            "pr_note": {
+              "type": "string",
+              "description": "Tactical synthesis for manager: what blocked you, what contradictions did you discover, what must future attempts know? (soft limit: 500 chars, hard limit: 1000)",
+              "maxLength": 1000
+            },
+            "test_contract": {
+              "type": "string",
+              "description": "Test author to builder: structured behavioral contract, edge cases, priority orders. Only test_author should set this. (soft limit: 500 chars, hard limit: 1000)",
+              "maxLength": 1000
+            },
+            "analysis_result": {
+              "type": "object",
+              "description": "Analyst findings. Only analyst role should set this. Structured analysis output for node/project/external scope examinations.",
+              "properties": {
+                "scope": {
+                  "type": "string",
+                  "enum": ["node", "project", "external"],
+                  "description": "Examination scope"
+                },
+                "target_nodes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Nodes examined"
+                },
+                "findings": {
+                  "type": "object",
+                  "properties": {
+                    "summary": {
+                      "type": "string",
+                      "description": "One-line synthesis (<120 chars)"
+                    },
+                    "details": {
+                      "type": "object",
+                      "properties": {
+                        "contract_fidelity": {
+                          "type": "string",
+                          "enum": ["matches", "deviates", "divergent", "n/a"]
+                        },
+                        "contradictions": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "patterns": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "risks": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "required": [
+                        "contract_fidelity",
+                        "contradictions",
+                        "patterns",
+                        "risks"
+                      ]
+                    }
+                  },
+                  "required": ["summary", "details"]
+                },
+                "confidence": {
+                  "type": "string",
+                  "enum": ["examined", "inferred", "sourced"],
+                  "description": "Confidence level based on grounding depth"
+                },
+                "escalate": {
+                  "type": "boolean",
+                  "description": "Request escalation for security risks or contract clashes",
+                  "default": false
+                },
+                "sources": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": ["file", "web", "assumption"]
+                      },
+                      "ref": {
+                        "type": "string"
+                      },
+                      "credibility": {
+                        "type": "string",
+                        "enum": ["high", "medium", "low"]
+                      }
+                    }
+                  }
+                },
+                "checklist_suggestions": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "text": {
+                        "type": "string"
+                      },
+                      "rationale": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              },
+              "required": ["scope", "target_nodes", "findings", "confidence"]
+            }
+          },
+          "required": ["status"]
+        }
+      }
+    }
+  ]
+}

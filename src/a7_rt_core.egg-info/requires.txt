@@ -1,0 +1,12 @@
+pydantic>=2.0
+openai>=1.0
+toml
+tree-sitter
+tree-sitter-python
+semgrep
+
+[dev]
+pytest>=7.0
+pytest-asyncio
+mypy
+ruff

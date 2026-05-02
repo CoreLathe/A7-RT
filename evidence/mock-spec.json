@@ -1,0 +1,298 @@
+[
+  {
+    "id": "types.core",
+    "type": "feature",
+    "stage": "core",
+    "description": "Core domain types: Request, Response, MatchRule, Template, Session",
+    "structural_deps": [],
+    "assumption_deps": [],
+    "interface": {
+      "exports": [
+        "class Request: method: str, path: str, headers: dict[str, str], body: bytes",
+        "class Response: status: int, headers: dict[str, str], body: bytes",
+        "class MatchRule: path_pattern: str, method: str|None, header_patterns: dict[str, str], body_contains: str|None",
+        "class Template: content: str, content_type: str",
+        "class Session: id: str, state: dict[str, Any]"
+      ],
+      "assumptions": [],
+      "raises": [],
+      "guarantees": ["Immutable dataclasses", "JSON serializable"]
+    }
+  },
+  {
+    "id": "matcher.parser",
+    "type": "feature",
+    "stage": "core",
+    "description": "Parse match patterns from strings and JSON into compiled MatchRule objects",
+    "structural_deps": ["types.core"],
+    "assumption_deps": [],
+    "interface": {
+      "exports": [
+        "def compile_pattern(pattern: str) -> Callable[[str], bool]",
+        "def parse_match_rule(raw: dict[str, Any]) -> MatchRule",
+        "class PatternError(Exception)"
+      ],
+      "assumptions": [],
+      "raises": ["PatternError on invalid pattern syntax"],
+      "guarantees": ["Compiled patterns execute in O(n) where n = input length"]
+    }
+  },
+  {
+    "id": "matcher.engine",
+    "type": "feature",
+    "stage": "core",
+    "description": "Request matching engine: evaluates Request against MatchRule set and returns first match",
+    "structural_deps": ["types.core", "matcher.parser"],
+    "assumption_deps": [],
+    "interface": {
+      "exports": [
+        "class MatcherEngine",
+        "def MatcherEngine.register_rule(self, rule: MatchRule, priority: int) -> None",
+        "def MatcherEngine.match_request(self, request: Request) -> MatchRule|None",
+        "def MatcherEngine.detect_collisions(self) -> list[tuple[MatchRule, MatchRule]]"
+      ],
+      "assumptions": [],
+      "raises": ["CollisionError on overlapping patterns at registration"],
+      "guarantees": [
+        "First matching rule wins",
+        "O(m * n) match time where m = rules, n = request size",
+        "Collision detection catches ambiguous patterns before runtime"
+      ]
+    }
+  },
+  {
+    "id": "responder.template",
+    "type": "feature",
+    "stage": "core",
+    "description": "Template string evaluation with variable substitution from request and session",
+    "structural_deps": ["types.core"],
+    "assumption_deps": [],
+    "interface": {
+      "exports": [
+        "def evaluate_template(template: str, context: dict[str, Any]) -> str",
+        "class TemplateSyntaxError(Exception)",
+        "TEMPLATE_PATTERN: str = r'\\{\\{\\s*(\\w+)\\s*\\}\\}'"
+      ],
+      "assumptions": [],
+      "raises": ["TemplateSyntaxError on unclosed delimiter"],
+      "guarantees": [
+        "Missing variables render as empty string",
+        "Linear time evaluation relative to template size"
+      ]
+    }
+  },
+  {
+    "id": "responder.engine",
+    "type": "feature",
+    "stage": "core",
+    "description": "Response builder: evaluates templates, applies session state, generates Response objects",
+    "structural_deps": ["types.core", "responder.template", "state.store"],
+    "assumption_deps": [],
+    "interface": {
+      "exports": [
+        "class ResponderEngine",
+        "def build_response(engine: ResponderEngine, match_rule: MatchRule, request: Request, session: Session) -> Response",
+        "def register_template(engine: ResponderEngine, rule_id: str, template: Template) -> None"
+      ],
+      "assumptions": [],
+      "raises": ["KeyError on missing template for rule"],
+      "guarantees": [
+        "Response body is UTF-8 encoded",
+        "Content-Type header matches template content_type"
+      ]
+    }
+  },
+  {
+    "id": "state.store",
+    "type": "feature",
+    "stage": "core",
+    "description": "In-memory session state store with TTL and namespace isolation",
+    "structural_deps": ["types.core"],
+    "assumption_deps": [],
+    "interface": {
+      "exports": [
+        "class StateStore",
+        "def create_session(store: StateStore, ttl_seconds: int) -> Session",
+        "def get_session(store: StateStore, session_id: str) -> Session|None",
+        "def update_session(store: StateStore, session: Session) -> None",
+        "def cleanup_expired(store: StateStore) -> int"
+      ],
+      "assumptions": [],
+      "raises": [],
+      "guarantees": [
+        "Expired sessions return None",
+        "Namespace isolation: session_id A cannot access session_id B state",
+        "Thread-safe operations"
+      ]
+    }
+  },
+  {
+    "id": "openapi.loader",
+    "type": "feature",
+    "stage": "core",
+    "description": "Load OpenAPI spec and generate mock rules from paths and response schemas",
+    "structural_deps": ["types.core", "matcher.parser"],
+    "assumption_deps": [],
+    "interface": {
+      "exports": [
+        "def load_from_spec(spec_path: str) -> list[tuple[MatchRule, Template]]",
+        "class OpenAPIError(Exception)",
+        "SUPPORTED_VERSIONS: list[str] = ['3.0.0', '3.1.0']"
+      ],
+      "assumptions": [],
+      "raises": ["OpenAPIError on unsupported version or malformed spec"],
+      "guarantees": [
+        "Each path generates at least one MatchRule",
+        "Response schemas converted to example templates"
+      ]
+    }
+  },
+  {
+    "id": "config.schema",
+    "type": "feature",
+    "stage": "core",
+    "description": "Configuration validation, defaults, and environment variable binding",
+    "structural_deps": [],
+    "assumption_deps": [],
+    "interface": {
+      "exports": [
+        "class Config: port: int, host: str, log_level: str, ttl_default: int, max_sessions: int",
+        "def load_config(env: dict[str, str], file_path: str|None) -> Config",
+        "DEFAULT_CONFIG: Config"
+      ],
+      "assumptions": [],
+      "raises": ["ValueError on invalid port or malformed config file"],
+      "guarantees": [
+        "All fields have default values",
+        "Environment variables override file values"
+      ]
+    }
+  },
+  {
+    "id": "core.orchestrator",
+    "type": "glue",
+    "stage": "integration",
+    "description": "Request processing orchestrator: coordinates matcher, responder, and state",
+    "structural_deps": [
+      "types.core",
+      "matcher.engine",
+      "responder.engine",
+      "state.store"
+    ],
+    "assumption_deps": [],
+    "interface": {
+      "exports": [
+        "class Orchestrator",
+        "def create_orchestrator(matcher: MatcherEngine, responder: ResponderEngine, store: StateStore) -> Orchestrator",
+        "def handle_request(orch: Orchestrator, request: Request) -> Response"
+      ],
+      "assumptions": [],
+      "raises": [],
+      "guarantees": [
+        "Session created on first request if not provided",
+        "404 response when no match rule found"
+      ]
+    }
+  },
+  {
+    "id": "http.server",
+    "type": "feature",
+    "stage": "integration",
+    "description": "HTTP server with request routing, middleware chain, and graceful shutdown",
+    "structural_deps": ["types.core", "config.schema"],
+    "assumption_deps": [],
+    "interface": {
+      "exports": [
+        "class HTTPServer",
+        "def create_server(config: Config, handler: Callable[[Request], Response]) -> HTTPServer",
+        "def run_server(server: HTTPServer) -> None",
+        "def shutdown_server(server: HTTPServer) -> None"
+      ],
+      "assumptions": [],
+      "raises": ["IOError on port binding failure"],
+      "guarantees": [
+        "Graceful shutdown on SIGTERM",
+        "Request timeout after 30 seconds",
+        "Concurrent request handling"
+      ]
+    }
+  },
+  {
+    "id": "admin.api.v2",
+    "type": "glue",
+    "stage": "integration",
+    "description": "Admin HTTP endpoints for runtime rule inspection and modification. Returns a handler function that routes /__admin/* paths to admin operations.",
+    "structural_deps": [
+      "types.core",
+      "matcher.engine",
+      "responder.engine",
+      "state.store"
+    ],
+    "assumption_deps": [],
+    "interface": {
+      "exports": [
+        "def create_admin_handler(matcher, responder, store) -> Callable[[Request], Response]",
+        "ADMIN_PREFIX: str = '/__admin'"
+      ],
+      "assumptions": [
+        "matcher exposes methods: register_rule(), get_rules()",
+        "responder exposes methods: register_template()",
+        "store exposes methods: get_session(), delete_session()"
+      ],
+      "raises": [],
+      "guarantees": [
+        "Handler checks request.path startswith ADMIN_PREFIX before routing",
+        "GET /__admin/rules returns JSON list of registered matcher rules",
+        "POST /__admin/rules accepts JSON body, creates MatchRule, registers via matcher",
+        "DELETE /__admin/sessions/{id} clears session via store.delete_session()",
+        "Non-admin paths return None (caller must handle fallback)"
+      ]
+    }
+  },
+  {
+    "id": "cli.runner",
+    "type": "glue",
+    "stage": "integration",
+    "description": "CLI argument parsing, config loading, and command dispatch",
+    "structural_deps": ["config.schema", "system.init"],
+    "assumption_deps": [],
+    "interface": {
+      "exports": ["def main(argv: list[str]) -> int", "USAGE: str"],
+      "assumptions": [],
+      "raises": [],
+      "guarantees": [
+        "Exit code 0 on clean shutdown",
+        "Exit code 1 on config error",
+        "Exit code 2 on runtime error"
+      ]
+    }
+  },
+  {
+    "id": "system.init",
+    "type": "glue",
+    "stage": "integration",
+    "description": "System bootstrap: wire components, load initial rules, start server",
+    "structural_deps": [
+      "types.core",
+      "config.schema",
+      "openapi.loader",
+      "core.orchestrator",
+      "http.server",
+      "admin.api"
+    ],
+    "assumption_deps": [],
+    "interface": {
+      "exports": [
+        "def initialize_system(config: Config, spec_path: str|None) -> SystemContext",
+        "class SystemContext: matcher: MatcherEngine, responder: ResponderEngine, state: StateStore, server: HTTPServer"
+      ],
+      "assumptions": [],
+      "raises": ["RuntimeError on initialization failure"],
+      "guarantees": [
+        "All components share consistent state references",
+        "OpenAPI rules loaded before server starts",
+        "Cleanup handlers registered for graceful shutdown"
+      ]
+    }
+  }
+]

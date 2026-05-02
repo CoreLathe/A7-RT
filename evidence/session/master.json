@@ -1,0 +1,3591 @@
+{
+  "project": {
+    "project_id": "session",
+    "name": "session",
+    "description": "A7-RT session: session",
+    "created_at": "2026-04-30T04:06:14.159413+00:00",
+    "manager_max_turns": 50,
+    "drain_turn": 40,
+    "provisional_depth_limit": 3
+  },
+  "stages": {
+    "stage-1": {
+      "stage_id": "stage-1",
+      "project_id": "session",
+      "name": "stage-1",
+      "status": "active",
+      "created_at": "2026-04-30T04:06:14.159432+00:00",
+      "node_ids": []
+    },
+    "core": {
+      "stage_id": "core",
+      "project_id": "session",
+      "name": "Core Logic",
+      "status": "sealed",
+      "created_at": "2026-04-30T04:06:14.343056+00:00",
+      "node_ids": [
+        "types.core",
+        "matcher.parser",
+        "matcher.engine",
+        "responder.template",
+        "responder.engine",
+        "state.store",
+        "openapi.loader",
+        "config.schema"
+      ],
+      "sealed_at": "2026-04-30T04:58:55.934087+00:00",
+      "summary": "Core Logic stage sealed. All 8 nodes (config.schema, matcher.engine, matcher.parser, openapi.loader, responder.engine, responder.template, state.store, types.core) are grounded with tests. All structural dependencies verified. No pending returns or commits.",
+      "exported_interfaces": {
+        "types.core": {
+          "exports": [
+            "class Request: method: str, path: str, headers: dict[str, str], body: bytes",
+            "class Response: status: int, headers: dict[str, str], body: bytes",
+            "class MatchRule: path_pattern: str, method: str|None, header_patterns: dict[str, str], body_contains: str|None",
+            "class Template: content: str, content_type: str",
+            "class Session: id: str, state: dict[str, Any]"
+          ],
+          "assumptions": [
+            "All classes are frozen dataclasses",
+            "All classes have to_dict() method for JSON serialization"
+          ],
+          "raises": null,
+          "guarantees": null
+        },
+        "matcher.parser": {
+          "exports": [
+            "def compile_pattern(pattern: str) -> Callable[[str], bool]",
+            "def parse_match_rule(raw: dict[str, Any]) -> MatchRule",
+            "class PatternError(Exception)"
+          ],
+          "assumptions": [
+            "types.core module exists with MatchRule dataclass",
+            "Uses importlib to avoid types module name conflict with stdlib"
+          ],
+          "raises": null,
+          "guarantees": null
+        },
+        "matcher.engine": {
+          "exports": [
+            "class MatcherEngine",
+            "def MatcherEngine.register_rule(self, rule: MatchRule, priority: int) -> None",
+            "def MatcherEngine.match_request(self, request: Request) -> MatchRule|None",
+            "def MatcherEngine.detect_collisions(self) -> list[tuple[MatchRule, MatchRule]]",
+            "class CollisionError(Exception)"
+          ],
+          "assumptions": [
+            "types.core module exists with Request and MatchRule dataclasses",
+            "matcher.parser module exists with compile_pattern function"
+          ],
+          "raises": null,
+          "guarantees": null
+        },
+        "responder.template": {
+          "exports": [
+            "def evaluate_template(template: str, context: dict[str, Any]) -> str",
+            "class TemplateSyntaxError(Exception)",
+            "TEMPLATE_PATTERN: str = r'\\{\\{\\s*(\\w+)\\s*\\}\\}'",
+            "TEMPLATE_PATTERN: str = r'\\\\{\\\\{\\\\s*(\\\\w+)\\\\s*\\\\}\\\\}'"
+          ],
+          "assumptions": [],
+          "raises": null,
+          "guarantees": null
+        },
+        "responder.engine": {
+          "exports": [
+            "class ResponderEngine",
+            "def build_response(engine: ResponderEngine, match_rule: MatchRule, request: Request, session: Session) -> Response",
+            "def register_template(engine: ResponderEngine, rule_id: str, template: Template) -> None",
+            "class ResponderEngine: Stores template registry, instantiated with no args",
+            "def register_template(engine: ResponderEngine, rule_id: str, template: Template) -> None: Maps rule_id to template",
+            "def build_response(engine: ResponderEngine, match_rule: MatchRule, request: Request, session: Session) -> Response: Builds response from template with session state"
+          ],
+          "assumptions": [
+            "types.core module provides Request, Response, MatchRule, Template, Session classes",
+            "responder.template module provides evaluate_template function"
+          ],
+          "raises": null,
+          "guarantees": null
+        },
+        "state.store": {
+          "exports": [
+            "class StateStore",
+            "def create_session(store: StateStore, ttl_seconds: int) -> Session",
+            "def get_session(store: StateStore, session_id: str) -> Session|None",
+            "def update_session(store: StateStore, session: Session) -> None",
+            "def cleanup_expired(store: StateStore) -> int",
+            "class StateStore: In-memory session store with TTL and namespace isolation",
+            "def create_session(store: StateStore, ttl_seconds: int) -> Session: Creates new session with unique id",
+            "def get_session(store: StateStore, session_id: str) -> Session|None: Returns session or None if expired/missing",
+            "def update_session(store: StateStore, session: Session) -> None: Persists session state",
+            "def cleanup_expired(store: StateStore) -> int: Removes expired sessions, returns count removed"
+          ],
+          "assumptions": [
+            "types.core module provides Session class via importlib import pattern",
+            "UUID used for unique session ID generation",
+            "time.time() used for TTL tracking"
+          ],
+          "raises": null,
+          "guarantees": null
+        },
+        "openapi.loader": {
+          "exports": [
+            "def load_from_spec(spec_path: str) -> list[tuple[MatchRule, Template]]",
+            "class OpenAPIError(Exception)",
+            "SUPPORTED_VERSIONS: list[str] = ['3.0.0', '3.1.0']"
+          ],
+          "assumptions": [
+            "types.core module exists with MatchRule and Template dataclasses"
+          ],
+          "raises": null,
+          "guarantees": null
+        },
+        "config.schema": {
+          "exports": [
+            "class Config: port: int, host: str, log_level: str, ttl_default: int, max_sessions: int",
+            "def load_config(env: dict[str, str], file_path: str|None) -> Config",
+            "DEFAULT_CONFIG: Config"
+          ],
+          "assumptions": [],
+          "raises": null,
+          "guarantees": null
+        }
+      }
+    },
+    "integration": {
+      "stage_id": "integration",
+      "project_id": "session",
+      "name": "Integration",
+      "status": "sealed",
+      "created_at": "2026-04-30T04:06:14.529861+00:00",
+      "node_ids": [
+        "core.orchestrator",
+        "http.server",
+        "admin.api.v2",
+        "cli.runner",
+        "system.init"
+      ],
+      "sealed_at": "2026-05-01T02:09:24.009004+00:00",
+      "summary": "Integration stage sealed. All 5 nodes (admin.api.v2, cli.runner, core.orchestrator, http.server, system.init) are grounded with tests. All structural dependencies verified. No pending returns or commits. Core Logic stage previously sealed with 8 grounded nodes. System integration complete.",
+      "exported_interfaces": {
+        "core.orchestrator": {
+          "exports": [
+            "class Orchestrator",
+            "def create_orchestrator(matcher: MatcherEngine, responder: ResponderEngine, store: StateStore) -> Orchestrator",
+            "def handle_request(orch: Orchestrator, request: Request) -> Response",
+            "class Orchestrator: Container for matcher, responder, store components",
+            "def create_orchestrator(matcher: MatcherEngine, responder: ResponderEngine, store: StateStore) -> Orchestrator: Factory that wires components",
+            "def handle_request(orch: Orchestrator, request: Request) -> Response: Main request processing flow"
+          ],
+          "assumptions": [
+            "matcher.engine module provides MatcherEngine with match_request method",
+            "responder.engine module provides ResponderEngine and build_response function",
+            "state.store module provides StateStore, create_session, and get_session",
+            "apitypes.core module provides Request, Response, MatchRule, Session classes"
+          ],
+          "raises": null,
+          "guarantees": null
+        },
+        "http.server": {
+          "exports": [
+            "class HTTPServer",
+            "def create_server(config: Config, handler: Callable[[Request], Response]) -> HTTPServer",
+            "def run_server(server: HTTPServer) -> None",
+            "def shutdown_server(server: HTTPServer) -> None",
+            "class HTTPServer: Core server class with config, handler, is_running, port properties",
+            "def create_server(config: Config, handler: Callable[[Request], Response], **optional_engines) -> HTTPServer: Factory function",
+            "def run_server(server: HTTPServer) -> None: Start listening, blocks until shutdown",
+            "def shutdown_server(server: HTTPServer) -> None: Graceful shutdown allowing in-flight requests"
+          ],
+          "assumptions": [
+            "config provides Config with host, port attributes",
+            "apitypes provides Request and Response classes",
+            "handler is Callable[[Request], Response]"
+          ],
+          "raises": null,
+          "guarantees": null
+        },
+        "admin.api.v2": {
+          "exports": [
+            "def create_admin_handler(matcher, responder, store) -> Callable[[Request], Response]",
+            "ADMIN_PREFIX: str = '/__admin'"
+          ],
+          "assumptions": [
+            "matcher exposes methods: register_rule(), get_rules()",
+            "responder exposes methods: register_template()",
+            "store exposes methods: get_session(), delete_session()"
+          ],
+          "raises": null,
+          "guarantees": null
+        },
+        "cli.runner": {
+          "exports": [
+            "def main(argv: list[str]) -> int",
+            "USAGE: str"
+          ],
+          "assumptions": [
+            "config module available for load_config",
+            "system module available for initialize_system",
+            "http module available for run_server",
+            "openapi module available for OpenAPIError"
+          ],
+          "raises": null,
+          "guarantees": null
+        },
+        "system.init": {
+          "exports": [
+            "def initialize_system(config: Config, spec_path: str|None) -> SystemContext",
+            "class SystemContext: matcher: MatcherEngine, responder: ResponderEngine, state: StateStore, server: HTTPServer"
+          ],
+          "assumptions": [
+            "config.schema provides Config class",
+            "apitypes provides Request, Response, MatchRule, Template",
+            "matcher provides MatcherEngine",
+            "responder provides ResponderEngine, register_template, build_response",
+            "state provides StateStore, create_session, get_session, update_session",
+            "http provides HTTPServer, create_server",
+            "openapi provides load_from_spec, OpenAPIError",
+            "admin.api provides create_admin_handler"
+          ],
+          "raises": null,
+          "guarantees": null
+        }
+      }
+    }
+  },
+  "nodes": {
+    "types.core": {
+      "node_id": "types.core",
+      "stage_id": "core",
+      "type": "feature",
+      "status": "grounded",
+      "description": "Core domain types: Request, Response, MatchRule, Template, Session",
+      "protocol_weight": "lean",
+      "interface": {
+        "exports": [
+          "class Request: method: str, path: str, headers: dict[str, str], body: bytes",
+          "class Response: status: int, headers: dict[str, str], body: bytes",
+          "class MatchRule: path_pattern: str, method: str|None, header_patterns: dict[str, str], body_contains: str|None",
+          "class Template: content: str, content_type: str",
+          "class Session: id: str, state: dict[str, Any]"
+        ],
+        "assumptions": [
+          "All classes are frozen dataclasses",
+          "All classes have to_dict() method for JSON serialization"
+        ],
+        "raises": [],
+        "guarantees": [
+          "Immutable dataclasses",
+          "JSON serializable"
+        ]
+      },
+      "structural_deps": [],
+      "assumption_deps": [],
+      "suspension_reason": null,
+      "content_file": "content/types.core.py",
+      "created_at": "2026-04-30T04:06:31.153524Z",
+      "retry_count": 0,
+      "max_retries": 3,
+      "retry_context": [],
+      "metadata": {
+        "tokens": 206,
+        "lines": 85,
+        "content_hash": "df9973e29a5781e2",
+        "first_export_preview": "class Request:",
+        "plumbing_summary": "Exports: Request, to_dict, Response...",
+        "computed_at": "2026-04-30T04:13:33.871479Z",
+        "iteration_history": [
+          16
+        ],
+        "avg_iterations": 16.0,
+        "chronicle": [
+          {
+            "turn": 0,
+            "actor": "manager",
+            "action": "dispatch",
+            "metadata": {
+              "role": "test_author",
+              "weight": "lean",
+              "session_id": "0adf45e3-7643-43b9-8c34-5412d028e630",
+              "attempt_number": 1,
+              "focus_hints": null,
+              "clear_findings": []
+            },
+            "manager_thought": null,
+            "manager_intent": "Core types are foundational\u2014dispatch test_author to define the contract first",
+            "dispatch_seq": 1,
+            "timestamp": "2026-04-30T04:06:31.153087+00:00"
+          },
+          {
+            "turn": 0,
+            "actor": "agent",
+            "action": "return",
+            "metadata": {
+              "status": "provisional",
+              "exports": [
+                "class Request: method: str, path: str, headers: dict[str, str], body: bytes",
+                "class Response: status: int, headers: dict[str, str], body: bytes",
+                "class MatchRule: path_pattern: str, method: str|None, header_patterns: dict[str, str], body_contains: str|None",
+                "class Template: content: str, content_type: str",
+                "class Session: id: str, state: dict[str, Any]"
+              ],
+              "files_written": [
+                "types.core.test"
+              ],
+              "pr_note": "First mover in stage. Established package convention: types/core.py. 28 test cases covering: dataclass validation, creation, immutability (frozen), JSON serialization, empty values, and edge cases for all 5 types. Tests use importlib for dynamic loading of implementation.",
+              "iterations_used": 7,
+              "tool_usage": {
+                "read_file": 0,
+                "write_file": 2,
+                "delete_file": 0,
+                "rename_file": 0,
+                "edit_file": 0,
+                "edit_files": 0,
+                "run_lint": 0,
+                "grep_content": 0,
+                "list_files": 1,
+                "preview_file": 0,
+                "record_thought": 1,
+                "run_test": 2,
+                "validate_exports": 0,
+                "get_current_state": 0
+              }
+            },
+            "manager_thought": null,
+            "manager_intent": null,
+            "dispatch_seq": 1,
+            "timestamp": "2026-04-30T04:09:12.619798+00:00"
+          },
+          {
+            "turn": 1,
+            "actor": "manager",
+            "action": "commit",
+            "metadata": {
+              "status": "provisional",
+              "reason": "Test contract defined by test_author with 28 test cases covering all 5 core types. Contract is solid\u2014commit to provisional to unblock downstream builders.",
+              "clear_findings": []
+            },
+            "manager_thought": null,
+            "manager_intent": "Finalize types.core test contract so builders can implement against it",
+            "dispatch_seq": 1,
+            "timestamp": "2026-04-30T04:09:18.431857+00:00"
+          },
+          {
+            "turn": 2,
+            "actor": "manager",
+            "action": "dispatch",
+            "metadata": {
+              "role": "builder",
+              "weight": "lean",
+              "session_id": "4699e70e-5f96-4349-9986-b6d9a4e06347",
+              "attempt_number": 2,
+              "focus_hints": null,
+              "clear_findings": []
+            },
+            "manager_thought": null,
+            "manager_intent": "types.core is provisional with test contract defined\u2014dispatch builder to implement core domain types.",
+            "dispatch_seq": 2,
+            "timestamp": "2026-04-30T04:09:22.012040+00:00"
+          },
+          {
+            "turn": 2,
+            "actor": "agent",
+            "action": "return",
+            "metadata": {
+              "status": "grounded",
+              "exports": [
+                "class Request: method: str, path: str, headers: dict[str, str], body: bytes",
+                "class Response: status: int, headers: dict[str, str], body: bytes",
+                "class MatchRule: path_pattern: str, method: str|None, header_patterns: dict[str, str], body_contains: str|None",
+                "class Template: content: str, content_type: str",
+                "class Session: id: str, state: dict[str, Any]"
+              ],
+              "files_written": [
+                "types/core.py"
+              ],
+              "pr_note": "Implementation per test_contract. Used file structure types/core.py without __init__.py to avoid shadowing Python's standard library 'types' module. All 5 dataclasses (Request, Response, MatchRule, Template, Session) are frozen dataclasses with to_dict() methods for JSON serialization.",
+              "iterations_used": 16,
+              "tool_usage": {
+                "read_file": 0,
+                "write_file": 5,
+                "delete_file": 4,
+                "rename_file": 0,
+                "edit_file": 0,
+                "edit_files": 0,
+                "run_lint": 1,
+                "grep_content": 0,
+                "list_files": 1,
+                "preview_file": 0,
+                "record_thought": 0,
+                "run_test": 3,
+                "validate_exports": 0,
+                "get_current_state": 1
+              }
+            },
+            "manager_thought": null,
+            "manager_intent": null,
+            "dispatch_seq": 2,
+            "timestamp": "2026-04-30T04:13:33.788642+00:00"
+          }
+        ],
+        "analyst_findings": [],
+        "tool_usage": {
+          "read_file": 0,
+          "write_file": 5,
+          "delete_file": 4,
+          "rename_file": 0,
+          "edit_file": 0,
+          "edit_files": 0,
+          "run_lint": 1,
+          "grep_content": 0,
+          "list_files": 1,
+          "preview_file": 0,
+          "record_thought": 0,
+          "run_test": 3,
+          "validate_exports": 0,
+          "get_current_state": 1
+        }
+      },
+      "metadata_map": {
+        "types/core.py": {
+          "tokens": 206,
+          "lines": 85,
+          "content_hash": "df9973e29a5781e2",
+          "first_export_preview": "class Request:",
+          "plumbing_summary": "Exports: Request, to_dict, Response...",
+          "computed_at": "2026-04-30T04:13:33.866217Z",
+          "iteration_history": [],
+          "avg_iterations": 0.0,
+          "chronicle": [],
+          "analyst_findings": []
+        },
+        "types.core.py": {
+          "tokens": 206,
+          "lines": 85,
+          "content_hash": "df9973e29a5781e2",
+          "first_export_preview": "class Request:",
+          "plumbing_summary": "Exports: Request, to_dict, Response...",
+          "computed_at": "2026-04-30T04:13:33.870535Z",
+          "iteration_history": [],
+          "avg_iterations": 0.0,
+          "chronicle": [],
+          "analyst_findings": []
+        }
+      },
+      "view_spec": null,
+      "tags": [
+        {
+          "tag_id": "5be418e6-0906-49d6-bce6-a9e7d0eeecdb",
+          "node_id": "types.core",
+          "author_role": "builder",
+          "author_turn": 2,
+          "category": "quirk",
+          "content": "Package name 'types' conflicts with stdlib - use types/core.py without __init__.py to avoid shadowing",
+          "propagate": true,
+          "confirmed_by": [
+            "builder"
+          ]
+        }
+      ],
+      "pr_note": "Implementation per test_contract. Used file structure types/core.py without __init__.py to avoid shadowing Python's standard library 'types' module. All 5 dataclasses (Request, Response, MatchRule, Template, Session) are frozen dataclasses with to_dict() methods for JSON serialization.",
+      "test_contract": "TEST CONTRACT: types.core\n\nFILE STRUCTURE:\n- `types/core.py` \u2014 implementation of all 5 dataclasses\n- `types/__init__.py` \u2014 exports all classes (optional but recommended)\n\nAPI:\n- class Request: frozen dataclass with method, path, headers, body\n- class Response: frozen dataclass with status, headers, body  \n- class MatchRule: frozen dataclass with path_pattern, method|None, header_patterns, body_contains|None\n- class Template: frozen dataclass with content, content_type\n- class Session: frozen dataclass with id, state: dict[str, Any]\n\nBEHAVIOR:\n- All dataclasses MUST be frozen (immutable) - @dataclass(frozen=True)\n- All must support JSON serialization (test uses to_dict() if available)\n- Optional fields (method, body_contains) accept None\n- Session.state is dict[str, Any] for flexible nested data\n\nEDGES:\n- Empty strings/body handled gracefully\n- Complex nested state in Session works correctly\n- Attempted mutation raises AttributeError/TypeError\n\nCOERCION:\n- Bytes",
+      "committed_files": [
+        "types/core.py"
+      ]
+    },
+    "matcher.parser": {
+      "node_id": "matcher.parser",
+      "stage_id": "core",
+      "type": "feature",
+      "status": "grounded",
+      "description": "Parse match patterns from strings and JSON into compiled MatchRule objects",
+      "protocol_weight": "lean",
+      "interface": {
+        "exports": [
+          "def compile_pattern(pattern: str) -> Callable[[str], bool]",
+          "def parse_match_rule(raw: dict[str, Any]) -> MatchRule",
+          "class PatternError(Exception)"
+        ],
+        "assumptions": [
+          "types.core module exists with MatchRule dataclass",
+          "Uses importlib to avoid types module name conflict with stdlib"
+        ],
+        "raises": [
+          "PatternError on invalid pattern syntax"
+        ],
+        "guarantees": [
+          "Compiled patterns execute in O(n) where n = input length"
+        ]
+      },
+      "structural_deps": [],
+      "assumption_deps": [],
+      "suspension_reason": null,
+      "content_file": "content/matcher.parser.py",
+      "created_at": "2026-04-30T04:16:52.348802Z",
+      "retry_count": 0,
+      "max_retries": 3,
+      "retry_context": [],
+      "metadata": {
+        "tokens": 19,
+        "lines": 6,
+        "content_hash": "201edaa7aec23320",
+        "first_export_preview": "",
+        "plumbing_summary": "No exports detected",
+        "computed_at": "2026-04-30T04:22:04.005349Z",
+        "iteration_history": [
+          23
+        ],
+        "avg_iterations": 23.0,
+        "chronicle": [
+          {
+            "turn": 8,
+            "actor": "manager",
+            "action": "dispatch",
+            "metadata": {
+              "role": "test_author",
+              "weight": "lean",
+              "session_id": "a2aabfb3-e3b1-4a5d-8ac8-505ae13b8373",
+              "attempt_number": 1,
+              "focus_hints": null,
+              "clear_findings": []
+            },
+            "manager_thought": null,
+            "manager_intent": "First ready node, test_author to define contract before implementation",
+            "dispatch_seq": 5,
+            "timestamp": "2026-04-30T04:16:52.348202+00:00"
+          },
+          {
+            "turn": 8,
+            "actor": "agent",
+            "action": "return",
+            "metadata": {
+              "status": "provisional",
+              "exports": [
+                "def compile_pattern(pattern: str) -> Callable[[str], bool]",
+                "def parse_match_rule(raw: dict[str, Any]) -> MatchRule",
+                "class PatternError(Exception)"
+              ],
+              "files_written": [
+                "matcher.parser.test"
+              ],
+              "pr_note": "Mode A Contract Validation: Tests written against fixed exports compile_pattern, parse_match_rule, PatternError. Tests cover: wildcard patterns (* and ?), literal matching, regex escaping, full/partial MatchRule parsing, error conditions (missing fields, invalid types), O(n) guarantee verification. Builder implements in matcher/parser.py following package pattern convention from types.core and config.schema.",
+              "iterations_used": 7,
+              "tool_usage": {
+                "read_file": 1,
+                "write_file": 1,
+                "delete_file": 0,
+                "rename_file": 1,
+                "edit_file": 0,
+                "edit_files": 0,
+                "run_lint": 0,
+                "grep_content": 0,
+                "list_files": 0,
+                "preview_file": 0,
+                "record_thought": 0,
+                "run_test": 2,
+                "validate_exports": 0,
+                "get_current_state": 0
+              }
+            },
+            "manager_thought": null,
+            "manager_intent": null,
+            "dispatch_seq": 5,
+            "timestamp": "2026-04-30T04:18:43.364164+00:00"
+          },
+          {
+            "turn": 9,
+            "actor": "manager",
+            "action": "commit",
+            "metadata": {
+              "status": "provisional",
+              "reason": "Test contract defined successfully by test_author. Tests cover wildcard patterns, literal matching, regex escaping, MatchRule parsing, error conditions, and O(n) guarantee verification. Ready for builder implementation.",
+              "clear_findings": []
+            },
+            "manager_thought": null,
+            "manager_intent": "Commit test_author return to finalize test contract for matcher.parser",
+            "dispatch_seq": 5,
+            "timestamp": "2026-04-30T04:18:47.187790+00:00"
+          },
+          {
+            "turn": 10,
+            "actor": "manager",
+            "action": "dispatch",
+            "metadata": {
+              "role": "builder",
+              "weight": "lean",
+              "session_id": "18dafe95-e40b-4945-8c47-0745ff312a7b",
+              "attempt_number": 2,
+              "focus_hints": null,
+              "clear_findings": []
+            },
+            "manager_thought": null,
+            "manager_intent": "Provisional node ready for implementation - dispatch builder to implement matcher.parser",
+            "dispatch_seq": 6,
+            "timestamp": "2026-04-30T04:18:52.289991+00:00"
+          },
+          {
+            "turn": 10,
+            "actor": "agent",
+            "action": "return",
+            "metadata": {
+              "status": "grounded",
+              "exports": [
+                "def compile_pattern(pattern: str) -> Callable[[str], bool]",
+                "def parse_match_rule(raw: dict[str, Any]) -> MatchRule",
+                "class PatternError(Exception)"
+              ],
+              "files_written": [
+                "matcher/__init__.py",
+                "matcher/parser.py",
+                "matcher.parser.test"
+              ],
+              "pr_note": "Implementation of matcher.parser per test_contract. Package structure: matcher/__init__.py and matcher/parser.py. Uses importlib.util to import MatchRule from types.core to avoid Python stdlib 'types' module naming conflict. compile_pattern supports * and ? wildcards with O(n) matching. parse_match_rule validates required/optional fields and returns MatchRule dataclass.",
+              "iterations_used": 23,
+              "tool_usage": {
+                "read_file": 4,
+                "write_file": 3,
+                "delete_file": 1,
+                "rename_file": 0,
+                "edit_file": 4,
+                "edit_files": 0,
+                "run_lint": 1,
+                "grep_content": 1,
+                "list_files": 2,
+                "preview_file": 1,
+                "record_thought": 0,
+                "run_test": 4,
+                "validate_exports": 0,
+                "get_current_state": 1
+              }
+            },
+            "manager_thought": null,
+            "manager_intent": null,
+            "dispatch_seq": 6,
+            "timestamp": "2026-04-30T04:22:03.791814+00:00"
+          }
+        ],
+        "analyst_findings": [],
+        "tool_usage": {
+          "read_file": 4,
+          "write_file": 3,
+          "delete_file": 1,
+          "rename_file": 0,
+          "edit_file": 4,
+          "edit_files": 0,
+          "run_lint": 1,
+          "grep_content": 1,
+          "list_files": 2,
+          "preview_file": 1,
+          "record_thought": 0,
+          "run_test": 4,
+          "validate_exports": 0,
+          "get_current_state": 1
+        }
+      },
+      "metadata_map": {
+        "matcher/__init__.py": {
+          "tokens": 19,
+          "lines": 6,
+          "content_hash": "201edaa7aec23320",
+          "first_export_preview": "",
+          "plumbing_summary": "No exports detected",
+          "computed_at": "2026-04-30T04:22:03.978397Z",
+          "iteration_history": [],
+          "avg_iterations": 0.0,
+          "chronicle": [],
+          "analyst_findings": []
+        },
+        "matcher/parser.py": {
+          "tokens": 502,
+          "lines": 139,
+          "content_hash": "ed635efd72a3aac0",
+          "first_export_preview": "class PatternError(Exception):",
+          "plumbing_summary": "Exports: PatternError, compile_pattern, matcher...",
+          "computed_at": "2026-04-30T04:22:03.990926Z",
+          "iteration_history": [],
+          "avg_iterations": 0.0,
+          "chronicle": [],
+          "analyst_findings": []
+        },
+        "matcher.parser.test": {
+          "tokens": 657,
+          "lines": 233,
+          "content_hash": "f0a677b83df491e6",
+          "first_export_preview": "class TestCompilePattern:",
+          "plumbing_summary": "Exports: TestCompilePattern, TestParseMatchRule, TestPatternError...",
+          "computed_at": "2026-04-30T04:22:03.998392Z",
+          "iteration_history": [],
+          "avg_iterations": 0.0,
+          "chronicle": [],
+          "analyst_findings": []
+        },
+        "matcher.parser.py": {
+          "tokens": 19,
+          "lines": 6,
+          "content_hash": "201edaa7aec23320",
+          "first_export_preview": "",
+          "plumbing_summary": "No exports detected",
+          "computed_at": "2026-04-30T04:22:04.004103Z",
+          "iteration_history": [],
+          "avg_iterations": 0.0,
+          "chronicle": [],
+          "analyst_findings": []
+        }
+      },
+      "view_spec": null,
+      "tags": [
+        {
+          "tag_id": "de50c47f-649d-44e0-97cc-e82ada0def5f",
+          "node_id": "matcher.parser",
+          "author_role": "builder",
+          "author_turn": 10,
+          "category": "quirk",
+          "content": "Cannot use 'types' as package name due to stdlib conflict; use importlib.util for imports",
+          "propagate": true,
+          "confirmed_by": [
+            "builder"
+          ]
+        }
+      ],
+      "pr_note": "Implementation of matcher.parser per test_contract. Package structure: matcher/__init__.py and matcher/parser.py. Uses importlib.util to import MatchRule from types.core to avoid Python stdlib 'types' module naming conflict. compile_pattern supports * and ? wildcards with O(n) matching. parse_match_rule validates required/optional fields and returns MatchRule dataclass.",
+      "test_contract": "TEST CONTRACT: matcher.parser\n\nFILE STRUCTURE:\n- `matcher/__init__.py` - package init (can be empty or export parser)\n- `matcher/parser.py` - implementation with compile_pattern, parse_match_rule, PatternError\n\nAPI:\n- `compile_pattern(pattern: str) -> Callable[[str], bool]`: Compiles pattern string into matcher function\n  - Returns callable that takes string input, returns bool match result\n  - Guarantees O(n) execution where n = input length\n  - Supports wildcards: `*` (matches any char sequence), `?` (matches single char)\n  - Treats regex metacharacters (., [, ], etc.) as literal characters\n\n- `parse_match_rule(raw: dict[str, Any]) -> MatchRule`: Parses dict into MatchRule dataclass\n  - Required field: `path_pattern` (str)\n  - Optional fields: `method` (str|None), `header_patterns` (dict[str,str]), `body_contains` (str|None)\n  - Returns MatchRule from types.core\n\n- `class PatternError(Exception)`: Exception for invalid pattern syntax or malformed input\n\nBEHAVIOR:\n",
+      "committed_files": [
+        "matcher/__init__.py",
+        "matcher/parser.py",
+        "matcher.parser.test"
+      ]
+    },
+    "matcher.engine": {
+      "node_id": "matcher.engine",
+      "stage_id": "core",
+      "type": "feature",
+      "status": "grounded",
+      "description": "Request matching engine: evaluates Request against MatchRule set and returns first match",
+      "protocol_weight": "lean",
+      "interface": {
+        "exports": [
+          "class MatcherEngine",
+          "def MatcherEngine.register_rule(self, rule: MatchRule, priority: int) -> None",
+          "def MatcherEngine.match_request(self, request: Request) -> MatchRule|None",
+          "def MatcherEngine.detect_collisions(self) -> list[tuple[MatchRule, MatchRule]]",
+          "class CollisionError(Exception)"
+        ],
+        "assumptions": [
+          "types.core module exists with Request and MatchRule dataclasses",
+          "matcher.parser module exists with compile_pattern function"
+        ],
+        "raises": [
+          "CollisionError on overlapping patterns at registration"
+        ],
+        "guarantees": [
+          "First matching rule wins",
+          "O(m * n) match time where m = rules, n = request size",
+          "Collision detection catches ambiguous patterns before runtime"
+        ]
+      },
+      "structural_deps": [],
+      "assumption_deps": [],
+      "suspension_reason": null,
+      "content_file": "content/matcher.engine.py",
+      "created_at": "2026-04-30T04:22:11.434769Z",
+      "retry_count": 0,
+      "max_retries": 3,
+      "retry_context": [],
+      "metadata": {
+        "tokens": 1027,
+        "lines": 245,
+        "content_hash": "47acab4986e4f6ee",
+        "first_export_preview": "class CollisionError(Exception):",
+        "plumbing_summary": "Exports: CollisionError, MatcherEngine, __init__...",
+        "computed_at": "2026-04-30T04:33:01.751027Z",
+        "iteration_history": [
+          7
+        ],
+        "avg_iterations": 7.0,
+        "chronicle": [
+          {
+            "turn": 12,
+            "actor": "manager",
+            "action": "dispatch",
+            "metadata": {
+              "role": "test_author",
+              "weight": "lean",
+              "session_id": "4bfe959d-f580-4300-a339-4e42a745063c",
+              "attempt_number": 1,
+              "focus_hints": null,
+              "clear_findings": []
+            },
+            "manager_thought": null,
+            "manager_intent": "Dispatch highest ready node (matcher.engine) to test_author to define test contract before implementation.",
+            "dispatch_seq": 7,
+            "timestamp": "2026-04-30T04:22:11.431356+00:00"
+          },
+          {
+            "turn": 12,
+            "actor": "agent",
+            "action": "return",
+            "metadata": {
+              "status": "provisional",
+              "exports": [
+                "class MatcherEngine",
+                "def MatcherEngine.register_rule(self, rule: MatchRule, priority: int) -> None",
+                "def MatcherEngine.match_request(self, request: Request) -> MatchRule|None",
+                "def MatcherEngine.detect_collisions(self) -> list[tuple[MatchRule, MatchRule]]"
+              ],
+              "files_written": [
+                "matcher.engine.test"
+              ],
+              "pr_note": "Tests written following exact exports from contract. MatcherEngine must use compile_pattern from matcher.parser for wildcard matching (*=any sequence, ?=single char). Priority ordering: higher number = higher priority, checked first. Collision detection should find rules where patterns can match same request (e.g., /api/* and /api/users both match /api/users).",
+              "iterations_used": 18,
+              "tool_usage": {
+                "read_file": 5,
+                "write_file": 5,
+                "delete_file": 0,
+                "rename_file": 1,
+                "edit_file": 0,
+                "edit_files": 0,
+                "run_lint": 0,
+                "grep_content": 0,
+                "list_files": 0,
+                "preview_file": 0,
+                "record_thought": 1,
+                "run_test": 6,
+                "validate_exports": 0,
+                "get_current_state": 1
+              }
+            },
+            "manager_thought": null,
+            "manager_intent": null,
+            "dispatch_seq": 7,
+            "timestamp": "2026-04-30T04:31:10.383944+00:00"
+          },
+          {
+            "turn": 13,
+            "actor": "manager",
+            "action": "commit",
+            "metadata": {
+              "status": "provisional",
+              "reason": "Test contract defined by test_author, ready to commit to provisional status",
+              "clear_findings": []
+            },
+            "manager_thought": null,
+            "manager_intent": "Finalize test contract for matcher.engine",
+            "dispatch_seq": 7,
+            "timestamp": "2026-04-30T04:31:13.261944+00:00"
+          },
+          {
+            "turn": 14,
+            "actor": "manager",
+            "action": "dispatch",
+            "metadata": {
+              "role": "builder",
+              "weight": "lean",
+              "session_id": "395e9e16-8d78-4087-8389-c63891154f21",
+              "attempt_number": 2,
+              "focus_hints": null,
+              "clear_findings": []
+            },
+            "manager_thought": null,
+            "manager_intent": "Implement the matcher.engine feature which is in provisional state (test contract already defined)",
+            "dispatch_seq": 8,
+            "timestamp": "2026-04-30T04:31:18.263895+00:00"
+          },
+          {
+            "turn": 14,
+            "actor": "agent",
+            "action": "return",
+            "metadata": {
+              "status": "grounded",
+              "exports": [
+                "class MatcherEngine",
+                "def MatcherEngine.register_rule(self, rule: MatchRule, priority: int) -> None",
+                "def MatcherEngine.match_request(self, request: Request) -> MatchRule|None",
+                "def MatcherEngine.detect_collisions(self) -> list[tuple[MatchRule, MatchRule]]",
+                "class CollisionError(Exception)"
+              ],
+              "files_written": [
+                "matcher/engine.py",
+                "matcher/__init__.py"
+              ],
+              "pr_note": "Implemented MatcherEngine per test_contract with:\n\n1. **matcher/engine.py**: Core implementation with:\n   - `register_rule(rule, priority)`: Registers rules in priority-sorted order, raises CollisionError on overlap\n   - `match_request(request)`: Returns first matching rule by priority, checking method, path_pattern (wildcards), header_patterns, and body_contains\n   - `detect_collisions()`: Finds all overlapping rule pairs\n   - `CollisionError`: Exception for overlapping pattern registration\n\n2. **matcher/__init__.py**: Updated exports to include MatcherEngine and CollisionError alongside existing parser exports\n\n3. **Pattern matching logic**:\n   - Path patterns support wildcards (*, ?) via compile_pattern from matcher.parser\n   - Header patterns use same wildcard matching\n   - Method matching: exact match or None matches any\n   - Body matching: substring search in decoded body\n\n4. **Collision detection**: Conservative overlap detection considering method, path, and all",
+              "iterations_used": 7,
+              "tool_usage": {
+                "read_file": 3,
+                "write_file": 1,
+                "delete_file": 0,
+                "rename_file": 0,
+                "edit_file": 1,
+                "edit_files": 0,
+                "run_lint": 1,
+                "grep_content": 0,
+                "list_files": 1,
+                "preview_file": 0,
+                "record_thought": 0,
+                "run_test": 1,
+                "validate_exports": 0,
+                "get_current_state": 1
+              }
+            },
+            "manager_thought": null,
+            "manager_intent": null,
+            "dispatch_seq": 8,
+            "timestamp": "2026-04-30T04:33:01.558101+00:00"
+          }
+        ],
+        "analyst_findings": [],
+        "tool_usage": {
+          "read_file": 3,
+          "write_file": 1,
+          "delete_file": 0,
+          "rename_file": 0,
+          "edit_file": 1,
+          "edit_files": 0,
+          "run_lint": 1,
+          "grep_content": 0,
+          "list_files": 1,
+          "preview_file": 0,
+          "record_thought": 0,
+          "run_test": 1,
+          "validate_exports": 0,
+          "get_current_state": 1
+        }
+      },
+      "metadata_map": {
+        "matcher/engine.py": {
+          "tokens": 1027,
+          "lines": 245,
+          "content_hash": "47acab4986e4f6ee",
+          "first_export_preview": "class CollisionError(Exception):",
+          "plumbing_summary": "Exports: CollisionError, MatcherEngine, __init__...",
+          "computed_at": "2026-04-30T04:33:01.734996Z",
+          "iteration_history": [],
+          "avg_iterations": 0.0,
+          "chronicle": [],
+          "analyst_findings": []
+        },
+        "matcher/__init__.py": {
+          "tokens": 26,
+          "lines": 7,
+          "content_hash": "2cd9db5c879f7a9b",
+          "first_export_preview": "",
+          "plumbing_summary": "No exports detected",
+          "computed_at": "2026-04-30T04:33:01.739398Z",
+          "iteration_history": [],
+          "avg_iterations": 0.0,
+          "chronicle": [],
+          "analyst_findings": []
+        },
+        "matcher.engine.py": {
+          "tokens": 1027,
+          "lines": 245,
+          "content_hash": "47acab4986e4f6ee",
+          "first_export_preview": "class CollisionError(Exception):",
+          "plumbing_summary": "Exports: CollisionError, MatcherEngine, __init__...",
+          "computed_at": "2026-04-30T04:33:01.747314Z",
+          "iteration_history": [],
+          "avg_iterations": 0.0,
+          "chronicle": [],
+          "analyst_findings": []
+        }
+      },
+      "view_spec": null,
+      "tags": [],
+      "pr_note": "Implemented MatcherEngine per test_contract with:\n\n1. **matcher/engine.py**: Core implementation with:\n   - `register_rule(rule, priority)`: Registers rules in priority-sorted order, raises CollisionError on overlap\n   - `match_request(request)`: Returns first matching rule by priority, checking method, path_pattern (wildcards), header_patterns, and body_contains\n   - `detect_collisions()`: Finds all overlapping rule pairs\n   - `CollisionError`: Exception for overlapping pattern registration\n\n2. **matcher/__init__.py**: Updated exports to include MatcherEngine and CollisionError alongside existing parser exports\n\n3. **Pattern matching logic**:\n   - Path patterns support wildcards (*, ?) via compile_pattern from matcher.parser\n   - Header patterns use same wildcard matching\n   - Method matching: exact match or None matches any\n   - Body matching: substring search in decoded body\n\n4. **Collision detection**: Conservative overlap detection considering method, path, and all",
+      "test_contract": "TEST CONTRACT: matcher.engine\n\nFILE STRUCTURE:\n- matcher/engine.py - MatcherEngine implementation\n- matcher/__init__.py - exports MatcherEngine, CollisionError\n\nAPI:\n- class MatcherEngine: Request matching engine\n- def register_rule(self, rule: MatchRule, priority: int) -> None: Register rule with priority\n- def match_request(self, request: Request) -> MatchRule|None: Return first matching rule or None\n- def detect_collisions(self) -> list[tuple[MatchRule, MatchRule]]: Find overlapping rules\n- class CollisionError(Exception): Raised on overlapping pattern registration\n\nBEHAVIOR:\n- Higher priority rules checked first (higher number = higher priority)\n- First matching rule wins\n- MatchRule matching checks: path_pattern (wildcards), method (None=any), header_patterns (all must match), body_contains (substring)\n- CollisionError raised immediately when overlapping rule registered\n- Collision detection considers method overlap (same method or None)\n\nEDGES:\n- Empty rules:",
+      "committed_files": [
+        "matcher/engine.py",
+        "matcher/__init__.py"
+      ]
+    },
+    "responder.template": {
+      "node_id": "responder.template",
+      "stage_id": "core",
+      "type": "feature",
+      "status": "grounded",
+      "description": "Template string evaluation with variable substitution from request and session",
+      "protocol_weight": "lean",
+      "interface": {
+        "exports": [
+          "def evaluate_template(template: str, context: dict[str, Any]) -> str",
+          "class TemplateSyntaxError(Exception)",
+          "TEMPLATE_PATTERN: str = r'\\{\\{\\s*(\\w+)\\s*\\}\\}'",
+          "TEMPLATE_PATTERN: str = r'\\\\{\\\\{\\\\s*(\\\\w+)\\\\s*\\\\}\\\\}'"
+        ],
+        "assumptions": [],
+        "raises": [
+          "TemplateSyntaxError on unclosed delimiter"
+        ],
+        "guarantees": [
+          "Missing variables render as empty string",
+          "Linear time evaluation relative to template size"
+        ]
+      },
+      "structural_deps": [],
+      "assumption_deps": [],
+      "suspension_reason": null,
+      "content_file": "content/responder.template.py",
+      "created_at": "2026-04-30T04:33:09.571114Z",
+      "retry_count": 0,
+      "max_retries": 3,
+      "retry_context": [],
+      "metadata": {
+        "tokens": 200,
+        "lines": 58,
+        "content_hash": "f5199e0d3acc335e",
+        "first_export_preview": "class TemplateSyntaxError(Exception):",
+        "plumbing_summary": "Exports: TemplateSyntaxError, evaluate_template, replace_var",
+        "computed_at": "2026-04-30T04:36:33.367056Z",
+        "iteration_history": [
+          8
+        ],
+        "avg_iterations": 8.0,
+        "chronicle": [
+          {
+            "turn": 16,
+            "actor": "manager",
+            "action": "dispatch",
+            "metadata": {
+              "role": "test_author",
+              "weight": "lean",
+              "session_id": "da09e424-f627-4a7b-8649-b2fc7ea37215",
+              "attempt_number": 1,
+              "focus_hints": null,
+              "clear_findings": []
+            },
+            "manager_thought": null,
+            "manager_intent": "Dispatch test_author for responder.template to define test contract before implementation",
+            "dispatch_seq": 9,
+            "timestamp": "2026-04-30T04:33:09.567789+00:00"
+          },
+          {
+            "turn": 16,
+            "actor": "agent",
+            "action": "return",
+            "metadata": {
+              "status": "provisional",
+              "exports": [
+                "def evaluate_template(template: str, context: dict[str, Any]) -> str",
+                "class TemplateSyntaxError(Exception)",
+                "TEMPLATE_PATTERN: str = r'\\\\{\\\\{\\\\s*(\\\\w+)\\\\s*\\\\}\\\\}'"
+              ],
+              "files_written": [
+                "responder.template.test"
+              ],
+              "pr_note": null,
+              "iterations_used": 9,
+              "tool_usage": {
+                "read_file": 1,
+                "write_file": 1,
+                "delete_file": 0,
+                "rename_file": 0,
+                "edit_file": 2,
+                "edit_files": 0,
+                "run_lint": 0,
+                "grep_content": 1,
+                "list_files": 0,
+                "preview_file": 0,
+                "record_thought": 1,
+                "run_test": 2,
+                "validate_exports": 0,
+                "get_current_state": 0
+              }
+            },
+            "manager_thought": null,
+            "manager_intent": null,
+            "dispatch_seq": 9,
+            "timestamp": "2026-04-30T04:35:31.576635+00:00"
+          },
+          {
+            "turn": 17,
+            "actor": "manager",
+            "action": "commit",
+            "metadata": {
+              "status": "provisional",
+              "reason": "Test contract defined by test_author, advancing to provisional status for builder implementation",
+              "clear_findings": []
+            },
+            "manager_thought": null,
+            "manager_intent": "Finalize test contract for responder.template so builder can implement",
+            "dispatch_seq": 9,
+            "timestamp": "2026-04-30T04:35:34.916777+00:00"
+          },
+          {
+            "turn": 18,
+            "actor": "manager",
+            "action": "dispatch",
+            "metadata": {
+              "role": "builder",
+              "weight": "lean",
+              "session_id": "670eee8d-6b85-4de7-8890-dbda5e00297f",
+              "attempt_number": 2,
+              "focus_hints": null,
+              "clear_findings": []
+            },
+            "manager_thought": null,
+            "manager_intent": "Dispatching provisional node to builder for implementation",
+            "dispatch_seq": 10,
+            "timestamp": "2026-04-30T04:35:39.194312+00:00"
+          },
+          {
+            "turn": 18,
+            "actor": "agent",
+            "action": "return",
+            "metadata": {
+              "status": "grounded",
+              "exports": [
+                "def evaluate_template(template: str, context: dict[str, Any]) -> str",
+                "class TemplateSyntaxError(Exception)",
+                "TEMPLATE_PATTERN: str = r'\\\\{\\\\{\\\\s*(\\\\w+)\\\\s*\\\\}\\\\}'"
+              ],
+              "files_written": [
+                "responder/template.py",
+                "responder/__init__.py"
+              ],
+              "pr_note": "Implemented responder.template per test_contract. Package structure with responder/template.py (implementation) and responder/__init__.py (exports). Supports {{var}} and {{ var }} syntax, raises TemplateSyntaxError for unclosed delimiters, converts non-string values to str(), and renders missing variables as empty strings.",
+              "iterations_used": 8,
+              "tool_usage": {
+                "read_file": 0,
+                "write_file": 2,
+                "delete_file": 0,
+                "rename_file": 0,
+                "edit_file": 0,
+                "edit_files": 0,
+                "run_lint": 1,
+                "grep_content": 0,
+                "list_files": 1,
+                "preview_file": 0,
+                "record_thought": 0,
+                "run_test": 1,
+                "validate_exports": 0,
+                "get_current_state": 1
+              }
+            },
+            "manager_thought": null,
+            "manager_intent": null,
+            "dispatch_seq": 10,
+            "timestamp": "2026-04-30T04:36:33.190470+00:00"
+          }
+        ],
+        "analyst_findings": [],
+        "tool_usage": {
+          "read_file": 0,
+          "write_file": 2,
+          "delete_file": 0,
+          "rename_file": 0,
+          "edit_file": 0,
+          "edit_files": 0,
+          "run_lint": 1,
+          "grep_content": 0,
+          "list_files": 1,
+          "preview_file": 0,
+          "record_thought": 0,
+          "run_test": 1,
+          "validate_exports": 0,
+          "get_current_state": 1
+        }
+      },
+      "metadata_map": {
+        "responder/template.py": {
+          "tokens": 200,
+          "lines": 58,
+          "content_hash": "f5199e0d3acc335e",
+          "first_export_preview": "class TemplateSyntaxError(Exception):",
+          "plumbing_summary": "Exports: TemplateSyntaxError, evaluate_template, replace_var",
+          "computed_at": "2026-04-30T04:36:33.356556Z",
+          "iteration_history": [],
+          "avg_iterations": 0.0,
+          "chronicle": [],
+          "analyst_findings": []
+        },
+        "responder/__init__.py": {
+          "tokens": 16,
+          "lines": 6,
+          "content_hash": "cd94699dc0a9dcf4",
+          "first_export_preview": "",
+          "plumbing_summary": "No exports detected",
+          "computed_at": "2026-04-30T04:36:33.360459Z",
+          "iteration_history": [],
+          "avg_iterations": 0.0,
+          "chronicle": [],
+          "analyst_findings": []
+        },
+        "responder.template.py": {
+          "tokens": 200,
+          "lines": 58,
+          "content_hash": "f5199e0d3acc335e",
+          "first_export_preview": "class TemplateSyntaxError(Exception):",
+          "plumbing_summary": "Exports: TemplateSyntaxError, evaluate_template, replace_var",
+          "computed_at": "2026-04-30T04:36:33.365765Z",
+          "iteration_history": [],
+          "avg_iterations": 0.0,
+          "chronicle": [],
+          "analyst_findings": []
+        }
+      },
+      "view_spec": null,
+      "tags": [],
+      "pr_note": "Implemented responder.template per test_contract. Package structure with responder/template.py (implementation) and responder/__init__.py (exports). Supports {{var}} and {{ var }} syntax, raises TemplateSyntaxError for unclosed delimiters, converts non-string values to str(), and renders missing variables as empty strings.",
+      "test_contract": "TEST CONTRACT: responder.template\n\nFILE STRUCTURE:\n- responder/template.py \u2014 implementation\n- responder/__init__.py \u2014 exports evaluate_template, TemplateSyntaxError, TEMPLATE_PATTERN\n\nAPI:\n- TEMPLATE_PATTERN: str = r'\\\\{\\\\{\\\\s*(\\\\w+)\\\\s*\\\\}\\\\}' \u2014 regex to match {{variable}} syntax\n- class TemplateSyntaxError(Exception) \u2014 raised for malformed templates\n- def evaluate_template(template: str, context: dict[str, Any]) -> str \u2014 substitute variables\n\nBEHAVIOR:\n- {{var}} extracts 'var', looks up in context, replaces with value\n- {{ var }} (with whitespace) same as {{var}}\n- Missing variable \u2192 empty string (not error)\n- Unclosed {{ (no matching }}) \u2192 raise TemplateSyntaxError\n- Non-string context values \u2192 str() conversion\n- No variables in template \u2192 returns unchanged\n- Single { not interpreted as variable\n\nEDGES:\n- Empty template \u2192 empty string\n- Empty variable name {{}} \u2192 not matched, preserved as-is\n- Numeric/None values \u2192 stringified (None becomes 'None",
+      "committed_files": [
+        "responder/template.py",
+        "responder/__init__.py"
+      ]
+    },
+    "responder.engine": {
+      "node_id": "responder.engine",
+      "stage_id": "core",
+      "type": "feature",
+      "status": "grounded",
+      "description": "Response builder: evaluates templates, applies session state, generates Response objects",
+      "protocol_weight": "lean",
+      "interface": {
+        "exports": [
+          "class ResponderEngine",
+          "def build_response(engine: ResponderEngine, match_rule: MatchRule, request: Request, session: Session) -> Response",
+          "def register_template(engine: ResponderEngine, rule_id: str, template: Template) -> None",
+          "class ResponderEngine: Stores template registry, instantiated with no args",
+          "def register_template(engine: ResponderEngine, rule_id: str, template: Template) -> None: Maps rule_id to template",
+          "def build_response(engine: ResponderEngine, match_rule: MatchRule, request: Request, session: Session) -> Response: Builds response from template with session state"
+        ],
+        "assumptions": [
+          "types.core module provides Request, Response, MatchRule, Template, Session classes",
+          "responder.template module provides evaluate_template function"
+        ],
+        "raises": [
+          "KeyError on missing template for rule"
+        ],
+        "guarantees": [
+          "Response body is UTF-8 encoded",
+          "Content-Type header matches template content_type"
+        ]
+      },
+      "structural_deps": [],
+      "assumption_deps": [],
+      "suspension_reason": null,
+      "content_file": "content/responder.engine.py",
+      "created_at": "2026-04-30T04:43:46.148065Z",
+      "retry_count": 0,
+      "max_retries": 3,
+      "retry_context": [],
+      "metadata": {
+        "tokens": 330,
+        "lines": 89,
+        "content_hash": "9d181bb100065b4f",
+        "first_export_preview": "class ResponderEngine:",
+        "plumbing_summary": "Exports: ResponderEngine, __init__, register_template...",
+        "computed_at": "2026-04-30T04:58:49.177488Z",
+        "iteration_history": [
+          12
+        ],
+        "avg_iterations": 12.0,
+        "chronicle": [
+          {
+            "turn": 24,
+            "actor": "manager",
+            "action": "dispatch",
+            "metadata": {
+              "role": "test_author",
+              "weight": "lean",
+              "session_id": "9a97f4e7-d46e-4139-a1e9-87d436080f14",
+              "attempt_number": 1,
+              "focus_hints": null,
+              "clear_findings": []
+            },
+            "manager_thought": null,
+            "manager_intent": "Dispatch test_author for responder.engine to define test contract for response builder feature",
+            "dispatch_seq": 13,
+            "timestamp": "2026-04-30T04:43:46.147305+00:00"
+          },
+          {
+            "turn": 24,
+            "actor": "agent",
+            "action": "return",
+            "metadata": {
+              "status": "provisional",
+              "exports": [
+                "class ResponderEngine: Template storage and response builder engine",
+                "def build_response(engine: ResponderEngine, match_rule: MatchRule, request: Request, session: Session) -> Response: Evaluates template for rule, substitutes variables from session state, returns Response with UTF-8 body",
+                "def register_template(engine: ResponderEngine, rule_id: str, template: Template) -> None: Associates template with rule_id for later lookup"
+              ],
+              "files_written": [
+                "responder.engine.test"
+              ],
+              "pr_note": "Tests written for ResponderEngine contract. Key design decisions: build_response uses match_rule.path_pattern as the rule_id lookup key - this seems to be the intended pattern given the export signatures. Template variables substituted from session.state. All tests expect default status 200 and proper Content-Type header from template.",
+              "iterations_used": 5,
+              "tool_usage": {
+                "read_file": 5,
+                "write_file": 1,
+                "delete_file": 0,
+                "rename_file": 0,
+                "edit_file": 0,
+                "edit_files": 0,
+                "run_lint": 0,
+                "grep_content": 0,
+                "list_files": 0,
+                "preview_file": 0,
+                "record_thought": 0,
+                "run_test": 1,
+                "validate_exports": 0,
+                "get_current_state": 0
+              }
+            },
+            "manager_thought": null,
+            "manager_intent": null,
+            "dispatch_seq": 13,
+            "timestamp": "2026-04-30T04:46:13.204122+00:00"
+          },
+          {
+            "turn": 25,
+            "actor": "manager",
+            "action": "commit",
+            "metadata": {
+              "status": "provisional",
+              "reason": "Test contract defined by test_author. Node advances from near to provisional with test file responder.engine.test created.",
+              "clear_findings": []
+            },
+            "manager_thought": null,
+            "manager_intent": "Finalize test contract commit for responder.engine",
+            "dispatch_seq": 13,
+            "timestamp": "2026-04-30T04:46:16.521927+00:00"
+          },
+          {
+            "turn": 30,
+            "actor": "manager",
+            "action": "dispatch",
+            "metadata": {
+              "role": "builder",
+              "weight": "lean",
+              "session_id": "75f05c4a-34e8-410c-af69-8183192035c3",
+              "attempt_number": 2,
+              "focus_hints": null,
+              "clear_findings": []
+            },
+            "manager_thought": null,
+            "manager_intent": "Implement ResponderEngine feature node, which is provisional with test contract already defined",
+            "dispatch_seq": 16,
+            "timestamp": "2026-04-30T04:56:37.976181+00:00"
+          },
+          {
+            "turn": 30,
+            "actor": "agent",
+            "action": "return",
+            "metadata": {
+              "status": "grounded",
+              "exports": [
+                "class ResponderEngine: Stores template registry, instantiated with no args",
+                "def register_template(engine: ResponderEngine, rule_id: str, template: Template) -> None: Maps rule_id to template",
+                "def build_response(engine: ResponderEngine, match_rule: MatchRule, request: Request, session: Session) -> Response: Builds response from template with session state"
+              ],
+              "files_written": [
+                "responder/engine.py",
+                "responder/__init__.py"
+              ],
+              "pr_note": "Implementation of responder.engine per test_contract and interface.exports. Uses importlib pattern for cross-module imports (types.core, responder.template). ResponderEngine stores templates in _templates dict, keyed by rule_id. build_response uses match_rule.path_pattern as rule_id lookup, evaluates template with session.state context, and returns Response with status=200, Content-Type header, and UTF-8 encoded body. Raises KeyError if template not found.",
+              "iterations_used": 12,
+              "tool_usage": {
+                "read_file": 4,
+                "write_file": 3,
+                "delete_file": 0,
+                "rename_file": 0,
+                "edit_file": 1,
+                "edit_files": 0,
+                "run_lint": 1,
+                "grep_content": 0,
+                "list_files": 1,
+                "preview_file": 0,
+                "record_thought": 0,
+                "run_test": 3,
+                "validate_exports": 0,
+                "get_current_state": 1
+              }
+            },
+            "manager_thought": null,
+            "manager_intent": null,
+            "dispatch_seq": 16,
+            "timestamp": "2026-04-30T04:58:49.085498+00:00"
+          }
+        ],
+        "analyst_findings": [],
+        "tool_usage": {
+          "read_file": 4,
+          "write_file": 3,
+          "delete_file": 0,
+          "rename_file": 0,
+          "edit_file": 1,
+          "edit_files": 0,
+          "run_lint": 1,
+          "grep_content": 0,
+          "list_files": 1,
+          "preview_file": 0,
+          "record_thought": 0,
+          "run_test": 3,
+          "validate_exports": 0,
+          "get_current_state": 1
+        }
+      },
+      "metadata_map": {
+        "responder/engine.py": {
+          "tokens": 330,
+          "lines": 89,
+          "content_hash": "9d181bb100065b4f",
+          "first_export_preview": "class ResponderEngine:",
+          "plumbing_summary": "Exports: ResponderEngine, __init__, register_template...",
+          "computed_at": "2026-04-30T04:58:49.168648Z",
+          "iteration_history": [],
+          "avg_iterations": 0.0,
+          "chronicle": [],
+          "analyst_findings": []
+        },
+        "responder/__init__.py": {
+          "tokens": 28,
+          "lines": 7,
+          "content_hash": "f071e554de02cda2",
+          "first_export_preview": "",
+          "plumbing_summary": "No exports detected",
+          "computed_at": "2026-04-30T04:58:49.172102Z",
+          "iteration_history": [],
+          "avg_iterations": 0.0,
+          "chronicle": [],
+          "analyst_findings": []
+        },
+        "responder.engine.py": {
+          "tokens": 330,
+          "lines": 89,
+          "content_hash": "9d181bb100065b4f",
+          "first_export_preview": "class ResponderEngine:",
+          "plumbing_summary": "Exports: ResponderEngine, __init__, register_template...",
+          "computed_at": "2026-04-30T04:58:49.176680Z",
+          "iteration_history": [],
+          "avg_iterations": 0.0,
+          "chronicle": [],
+          "analyst_findings": []
+        }
+      },
+      "view_spec": null,
+      "tags": [],
+      "pr_note": "Implementation of responder.engine per test_contract and interface.exports. Uses importlib pattern for cross-module imports (types.core, responder.template). ResponderEngine stores templates in _templates dict, keyed by rule_id. build_response uses match_rule.path_pattern as rule_id lookup, evaluates template with session.state context, and returns Response with status=200, Content-Type header, and UTF-8 encoded body. Raises KeyError if template not found.",
+      "test_contract": "TEST CONTRACT: responder.engine\n\nFILE STRUCTURE:\n- responder/engine.py \u2014 implementation lives here\n- responder/__init__.py \u2014 add exports (already exists)\n\nAPI:\n- class ResponderEngine: Stores template registry, instantiated with no args\n- def register_template(engine, rule_id: str, template: Template) -> None: Maps rule_id to template\n- def build_response(engine, match_rule: MatchRule, request: Request, session: Session) -> Response:\n  - Uses match_rule.path_pattern as rule_id to look up template\n  - Evaluates template.content with variables from session.state\n  - Returns Response(status=200, headers={\"Content-Type\": template.content_type}, body=utf8_bytes)\n\nBEHAVIOR:\n- Normal: Template stored via register_template, retrieved via build_response using rule.path_pattern\n- Template evaluation: {{var}} replaced with session.state.get(\"var\", \"\")\n- Content-Type header: Set from template.content_type\n- Response body: UTF-8 encoded bytes\n\nEDGES:\n- Missing template for rule \u2192 KeyError\n- Missing",
+      "committed_files": [
+        "responder/engine.py",
+        "responder/__init__.py"
+      ]
+    },
+    "state.store": {
+      "node_id": "state.store",
+      "stage_id": "core",
+      "type": "feature",
+      "status": "grounded",
+      "description": "In-memory session state store with TTL and namespace isolation",
+      "protocol_weight": "lean",
+      "interface": {
+        "exports": [
+          "class StateStore",
+          "def create_session(store: StateStore, ttl_seconds: int) -> Session",
+          "def get_session(store: StateStore, session_id: str) -> Session|None",
+          "def update_session(store: StateStore, session: Session) -> None",
+          "def cleanup_expired(store: StateStore) -> int",
+          "class StateStore: In-memory session store with TTL and namespace isolation",
+          "def create_session(store: StateStore, ttl_seconds: int) -> Session: Creates new session with unique id",
+          "def get_session(store: StateStore, session_id: str) -> Session|None: Returns session or None if expired/missing",
+          "def update_session(store: StateStore, session: Session) -> None: Persists session state",
+          "def cleanup_expired(store: StateStore) -> int: Removes expired sessions, returns count removed"
+        ],
+        "assumptions": [
+          "types.core module provides Session class via importlib import pattern",
+          "UUID used for unique session ID generation",
+          "time.time() used for TTL tracking"
+        ],
+        "raises": [],
+        "guarantees": [
+          "Expired sessions return None",
+          "Namespace isolation: session_id A cannot access session_id B state",
+          "Thread-safe operations"
+        ]
+      },
+      "structural_deps": [],
+      "assumption_deps": [],
+      "suspension_reason": null,
+      "content_file": "content/state.store.py",
+      "created_at": "2026-04-30T04:36:41.248232Z",
+      "retry_count": 0,
+      "max_retries": 3,
+      "retry_context": [],
+      "metadata": {
+        "tokens": 391,
+        "lines": 138,
+        "content_hash": "57e01b5f5c6eacc6",
+        "first_export_preview": "class _SessionEntry:",
+        "plumbing_summary": "Exports: _SessionEntry, StateStore, __init__...",
+        "computed_at": "2026-04-30T04:43:38.008101Z",
+        "iteration_history": [
+          15
+        ],
+        "avg_iterations": 15.0,
+        "chronicle": [
+          {
+            "turn": 20,
+            "actor": "manager",
+            "action": "dispatch",
+            "metadata": {
+              "role": "test_author",
+              "weight": "lean",
+              "session_id": "f67486fd-325d-4318-b811-5cc26fe9d7a0",
+              "attempt_number": 1,
+              "focus_hints": null,
+              "clear_findings": []
+            },
+            "manager_thought": null,
+            "manager_intent": "Dispatch test_author for state.store to define test contract before implementation",
+            "dispatch_seq": 11,
+            "timestamp": "2026-04-30T04:36:41.246639+00:00"
+          },
+          {
+            "turn": 20,
+            "actor": "agent",
+            "action": "return",
+            "metadata": {
+              "status": "provisional",
+              "exports": [
+                "class StateStore",
+                "def create_session(store: StateStore, ttl_seconds: int) -> Session",
+                "def get_session(store: StateStore, session_id: str) -> Session|None",
+                "def update_session(store: StateStore, session: Session) -> None",
+                "def cleanup_expired(store: StateStore) -> int"
+              ],
+              "files_written": [
+                "state.store.test"
+              ],
+              "pr_note": null,
+              "iterations_used": 7,
+              "tool_usage": {
+                "read_file": 1,
+                "write_file": 2,
+                "delete_file": 0,
+                "rename_file": 0,
+                "edit_file": 0,
+                "edit_files": 0,
+                "run_lint": 0,
+                "grep_content": 0,
+                "list_files": 2,
+                "preview_file": 0,
+                "record_thought": 0,
+                "run_test": 2,
+                "validate_exports": 0,
+                "get_current_state": 0
+              }
+            },
+            "manager_thought": null,
+            "manager_intent": null,
+            "dispatch_seq": 11,
+            "timestamp": "2026-04-30T04:40:26.250189+00:00"
+          },
+          {
+            "turn": 21,
+            "actor": "manager",
+            "action": "commit",
+            "metadata": {
+              "status": "provisional",
+              "reason": "Test contract defined by test_author - test file written, interface validated, exports confirmed",
+              "clear_findings": []
+            },
+            "manager_thought": null,
+            "manager_intent": "Commit test contract for state.store so builder can implement",
+            "dispatch_seq": 11,
+            "timestamp": "2026-04-30T04:40:31.085795+00:00"
+          },
+          {
+            "turn": 22,
+            "actor": "manager",
+            "action": "dispatch",
+            "metadata": {
+              "role": "builder",
+              "weight": "lean",
+              "session_id": "0b3b22da-3fb8-4370-92f7-ec36771d64f5",
+              "attempt_number": 2,
+              "focus_hints": null,
+              "clear_findings": []
+            },
+            "manager_thought": null,
+            "manager_intent": "Dispatch provisional node state.store to builder for implementation",
+            "dispatch_seq": 12,
+            "timestamp": "2026-04-30T04:40:36.261730+00:00"
+          },
+          {
+            "turn": 22,
+            "actor": "agent",
+            "action": "return",
+            "metadata": {
+              "status": "grounded",
+              "exports": [
+                "class StateStore: In-memory session store with TTL and namespace isolation",
+                "def create_session(store: StateStore, ttl_seconds: int) -> Session: Creates new session with unique id",
+                "def get_session(store: StateStore, session_id: str) -> Session|None: Returns session or None if expired/missing",
+                "def update_session(store: StateStore, session: Session) -> None: Persists session state",
+                "def cleanup_expired(store: StateStore) -> int: Removes expired sessions, returns count removed"
+              ],
+              "files_written": [
+                "state/store.py",
+                "state/__init__.py"
+              ],
+              "pr_note": "Implementation of state.store node per test contract. Package structure: state/__init__.py and state/store.py. Used importlib.util pattern (consistent with matcher/engine.py) to import Session from types.core due to 'types' naming conflict with stdlib. StateStore provides TTL-based session management with thread-safe operations using threading.Lock. Sessions are stored with expiration timestamps and lazily cleaned on access or explicitly via cleanup_expired().",
+              "iterations_used": 15,
+              "tool_usage": {
+                "read_file": 4,
+                "write_file": 5,
+                "delete_file": 1,
+                "rename_file": 0,
+                "edit_file": 0,
+                "edit_files": 0,
+                "run_lint": 1,
+                "grep_content": 0,
+                "list_files": 1,
+                "preview_file": 0,
+                "record_thought": 0,
+                "run_test": 4,
+                "validate_exports": 0,
+                "get_current_state": 1
+              }
+            },
+            "manager_thought": null,
+            "manager_intent": null,
+            "dispatch_seq": 12,
+            "timestamp": "2026-04-30T04:43:37.913773+00:00"
+          }
+        ],
+        "analyst_findings": [],
+        "tool_usage": {
+          "read_file": 4,
+          "write_file": 5,
+          "delete_file": 1,
+          "rename_file": 0,
+          "edit_file": 0,
+          "edit_files": 0,
+          "run_lint": 1,
+          "grep_content": 0,
+          "list_files": 1,
+          "preview_file": 0,
+          "record_thought": 0,
+          "run_test": 4,
+          "validate_exports": 0,
+          "get_current_state": 1
+        }
+      },
+      "metadata_map": {
+        "state/store.py": {
+          "tokens": 391,
+          "lines": 138,
+          "content_hash": "57e01b5f5c6eacc6",
+          "first_export_preview": "class _SessionEntry:",
+          "plumbing_summary": "Exports: _SessionEntry, StateStore, __init__...",
+          "computed_at": "2026-04-30T04:43:37.999706Z",
+          "iteration_history": [],
+          "avg_iterations": 0.0,
+          "chronicle": [],
+          "analyst_findings": []
+        },
+        "state/__init__.py": {
+          "tokens": 23,
+          "lines": 11,
+          "content_hash": "e12bed7ec16aca76",
+          "first_export_preview": "",
+          "plumbing_summary": "No exports detected",
+          "computed_at": "2026-04-30T04:43:38.003286Z",
+          "iteration_history": [],
+          "avg_iterations": 0.0,
+          "chronicle": [],
+          "analyst_findings": []
+        },
+        "state.store.py": {
+          "tokens": 391,
+          "lines": 138,
+          "content_hash": "57e01b5f5c6eacc6",
+          "first_export_preview": "class _SessionEntry:",
+          "plumbing_summary": "Exports: _SessionEntry, StateStore, __init__...",
+          "computed_at": "2026-04-30T04:43:38.007270Z",
+          "iteration_history": [],
+          "avg_iterations": 0.0,
+          "chronicle": [],
+          "analyst_findings": []
+        }
+      },
+      "view_spec": null,
+      "tags": [
+        {
+          "tag_id": "f9ed4320-db2e-44dd-9c7f-2b0e6093257e",
+          "node_id": "state.store",
+          "author_role": "builder",
+          "author_turn": 22,
+          "category": "quirk",
+          "content": "Must use importlib.util to import from types.core due to 'types' stdlib conflict",
+          "propagate": true,
+          "confirmed_by": [
+            "builder"
+          ]
+        },
+        {
+          "tag_id": "67f1eecf-1d7a-4a15-af8a-8b6210e276c8",
+          "node_id": "state.store",
+          "author_role": "builder",
+          "author_turn": 22,
+          "category": "order",
+          "content": "Import Session via importlib before using in type hints or dataclass",
+          "propagate": true,
+          "confirmed_by": [
+            "builder"
+          ]
+        }
+      ],
+      "pr_note": "Implementation of state.store node per test contract. Package structure: state/__init__.py and state/store.py. Used importlib.util pattern (consistent with matcher/engine.py) to import Session from types.core due to 'types' naming conflict with stdlib. StateStore provides TTL-based session management with thread-safe operations using threading.Lock. Sessions are stored with expiration timestamps and lazily cleaned on access or explicitly via cleanup_expired().",
+      "test_contract": "TEST CONTRACT: state.store\n\nFILE STRUCTURE:\n- state/__init__.py \u2014 package init, exports StateStore and functions\n- state/store.py \u2014 implementation lives here\n\nAPI:\n- class StateStore: Core store class, optionally takes namespace: str\n- def create_session(store, ttl_seconds: int) -> Session: Creates new session with unique id\n- def get_session(store, session_id: str) -> Session|None: Returns session or None if expired/missing\n- def update_session(store, session: Session) -> None: Persents session state\n- def cleanup_expired(store) -> int: Removes expired sessions, returns count removed\n\nBEHAVIOR:\n- create_session generates unique session IDs\n- Sessions have TTL; expired sessions return None from get_session\n- Namespace isolation: different StateStore instances with different namespaces don't share data\n- Thread-safe: concurrent create/get/update/cleanup operations must not corrupt state\n- cleanup_expired scans all sessions and removes those past TTL\n\nEDGES:\n- get on",
+      "committed_files": [
+        "state/store.py",
+        "state/__init__.py"
+      ]
+    },
+    "openapi.loader": {
+      "node_id": "openapi.loader",
+      "stage_id": "core",
+      "type": "feature",
+      "status": "grounded",
+      "description": "Load OpenAPI spec and generate mock rules from paths and response schemas",
+      "protocol_weight": "lean",
+      "interface": {
+        "exports": [
+          "def load_from_spec(spec_path: str) -> list[tuple[MatchRule, Template]]",
+          "class OpenAPIError(Exception)",
+          "SUPPORTED_VERSIONS: list[str] = ['3.0.0', '3.1.0']"
+        ],
+        "assumptions": [
+          "types.core module exists with MatchRule and Template dataclasses"
+        ],
+        "raises": [
+          "OpenAPIError on unsupported version or malformed spec"
+        ],
+        "guarantees": [
+          "Each path generates at least one MatchRule",
+          "Response schemas converted to example templates"
+        ]
+      },
+      "structural_deps": [],
+      "assumption_deps": [],
+      "suspension_reason": null,
+      "content_file": "content/openapi.loader.py",
+      "created_at": "2026-04-30T04:46:21.452924Z",
+      "retry_count": 0,
+      "max_retries": 3,
+      "retry_context": [],
+      "metadata": {
+        "tokens": 18,
+        "lines": 6,
+        "content_hash": "614a23fe1014ceaa",
+        "first_export_preview": "",
+        "plumbing_summary": "No exports detected",
+        "computed_at": "2026-04-30T04:56:30.313176Z",
+        "iteration_history": [
+          8
+        ],
+        "avg_iterations": 8.0,
+        "chronicle": [
+          {
+            "turn": 26,
+            "actor": "manager",
+            "action": "dispatch",
+            "metadata": {
+              "role": "test_author",
+              "weight": "lean",
+              "session_id": "e8ed4041-134c-4a69-9cdd-f09fcbf1f2b9",
+              "attempt_number": 1,
+              "focus_hints": null,
+              "clear_findings": []
+            },
+            "manager_thought": null,
+            "manager_intent": "Highest ready node (openapi.loader) is near with no test contract - dispatch test_author to define it",
+            "dispatch_seq": 14,
+            "timestamp": "2026-04-30T04:46:21.450999+00:00"
+          },
+          {
+            "turn": 26,
+            "actor": "agent",
+            "action": "return",
+            "metadata": {
+              "status": "provisional",
+              "exports": [],
+              "files_written": [
+                "openapi.loader.test"
+              ],
+              "pr_note": null,
+              "iterations_used": 8,
+              "tool_usage": {
+                "read_file": 2,
+                "write_file": 1,
+                "delete_file": 0,
+                "rename_file": 0,
+                "edit_file": 0,
+                "edit_files": 0,
+                "run_lint": 0,
+                "grep_content": 0,
+                "list_files": 0,
+                "preview_file": 0,
+                "record_thought": 0,
+                "run_test": 1,
+                "validate_exports": 0,
+                "get_current_state": 1
+              }
+            },
+            "manager_thought": null,
+            "manager_intent": null,
+            "dispatch_seq": 14,
+            "timestamp": "2026-04-30T04:54:21.764501+00:00"
+          },
+          {
+            "turn": 27,
+            "actor": "manager",
+            "action": "commit",
+            "metadata": {
+              "status": "provisional",
+              "reason": "Test contract defined by test_author - openapi.loader.test file written, advancing to provisional status so builder can implement",
+              "clear_findings": []
+            },
+            "manager_thought": null,
+            "manager_intent": "Finalize test contract for openapi.loader to unblock builder dispatch",
+            "dispatch_seq": 14,
+            "timestamp": "2026-04-30T04:54:25.054723+00:00"
+          },
+          {
+            "turn": 28,
+            "actor": "manager",
+            "action": "dispatch",
+            "metadata": {
+              "role": "builder",
+              "weight": "lean",
+              "session_id": "45157c36-4e1d-4a3d-a69e-41a51a90117b",
+              "attempt_number": 2,
+              "focus_hints": null,
+              "clear_findings": []
+            },
+            "manager_thought": null,
+            "manager_intent": "Dispatch highest ready node openapi.loader (provisional, has test) to builder for implementation",
+            "dispatch_seq": 15,
+            "timestamp": "2026-04-30T04:54:29.700005+00:00"
+          },
+          {
+            "turn": 28,
+            "actor": "agent",
+            "action": "return",
+            "metadata": {
+              "status": "grounded",
+              "exports": [
+                "def load_from_spec(spec_path: str) -> list[tuple[MatchRule, Template]]",
+                "class OpenAPIError(Exception)",
+                "SUPPORTED_VERSIONS: list[str] = ['3.0.0', '3.1.0']"
+              ],
+              "files_written": [
+                "openapi/__init__.py",
+                "openapi/loader.py"
+              ],
+              "pr_note": "Implemented openapi.loader package per test_contract. Created openapi/__init__.py for clean exports and openapi/loader.py with: (1) SUPPORTED_VERSIONS constant for OpenAPI 3.0.0 and 3.1.0, (2) OpenAPIError exception for spec validation errors, (3) load_from_spec() that parses JSON specs, validates version and paths, converts path parameters {id} to wildcards, generates MatchRules per HTTP operation, and creates Templates from response schemas. Uses importlib.util to import MatchRule/Template from types.core (avoiding stdlib 'types' conflict). Schema example generation handles objects, arrays, primitives, enums, and references.",
+              "iterations_used": 8,
+              "tool_usage": {
+                "read_file": 2,
+                "write_file": 2,
+                "delete_file": 0,
+                "rename_file": 0,
+                "edit_file": 0,
+                "edit_files": 0,
+                "run_lint": 1,
+                "grep_content": 0,
+                "list_files": 1,
+                "preview_file": 0,
+                "record_thought": 0,
+                "run_test": 1,
+                "validate_exports": 0,
+                "get_current_state": 1
+              }
+            },
+            "manager_thought": null,
+            "manager_intent": null,
+            "dispatch_seq": 15,
+            "timestamp": "2026-04-30T04:56:30.136538+00:00"
+          }
+        ],
+        "analyst_findings": [],
+        "tool_usage": {
+          "read_file": 2,
+          "write_file": 2,
+          "delete_file": 0,
+          "rename_file": 0,
+          "edit_file": 0,
+          "edit_files": 0,
+          "run_lint": 1,
+          "grep_content": 0,
+          "list_files": 1,
+          "preview_file": 0,
+          "record_thought": 0,
+          "run_test": 1,
+          "validate_exports": 0,
+          "get_current_state": 1
+        }
+      },
+      "metadata_map": {
+        "openapi/__init__.py": {
+          "tokens": 18,
+          "lines": 6,
+          "content_hash": "614a23fe1014ceaa",
+          "first_export_preview": "",
+          "plumbing_summary": "No exports detected",
+          "computed_at": "2026-04-30T04:56:30.303863Z",
+          "iteration_history": [],
+          "avg_iterations": 0.0,
+          "chronicle": [],
+          "analyst_findings": []
+        },
+        "openapi/loader.py": {
+          "tokens": 950,
+          "lines": 317,
+          "content_hash": "1e29d6df03344048",
+          "first_export_preview": "class OpenAPIError(Exception):",
+          "plumbing_summary": "Exports: OpenAPIError, load_from_spec, _convert_path_to_pattern...",
+          "computed_at": "2026-04-30T04:56:30.309486Z",
+          "iteration_history": [],
+          "avg_iterations": 0.0,
+          "chronicle": [],
+          "analyst_findings": []
+        },
+        "openapi.loader.py": {
+          "tokens": 18,
+          "lines": 6,
+          "content_hash": "614a23fe1014ceaa",
+          "first_export_preview": "",
+          "plumbing_summary": "No exports detected",
+          "computed_at": "2026-04-30T04:56:30.312974Z",
+          "iteration_history": [],
+          "avg_iterations": 0.0,
+          "chronicle": [],
+          "analyst_findings": []
+        }
+      },
+      "view_spec": null,
+      "tags": [],
+      "pr_note": "Implemented openapi.loader package per test_contract. Created openapi/__init__.py for clean exports and openapi/loader.py with: (1) SUPPORTED_VERSIONS constant for OpenAPI 3.0.0 and 3.1.0, (2) OpenAPIError exception for spec validation errors, (3) load_from_spec() that parses JSON specs, validates version and paths, converts path parameters {id} to wildcards, generates MatchRules per HTTP operation, and creates Templates from response schemas. Uses importlib.util to import MatchRule/Template from types.core (avoiding stdlib 'types' conflict). Schema example generation handles objects, arrays, primitives, enums, and references.",
+      "test_contract": "TEST CONTRACT: openapi.loader\n\nFILE STRUCTURE:\n- openapi/loader.py \u2014 implementation lives here\n- openapi/__init__.py \u2014 exports (optional)\n\nAPI:\n- SUPPORTED_VERSIONS: list[str] = ['3.0.0', '3.1.0'] \u2014 constant listing supported OpenAPI versions\n- class OpenAPIError(Exception) \u2014 raised for unsupported versions or malformed specs\n- def load_from_spec(spec_path: str) -> list[tuple[MatchRule, Template]] \u2014 loads spec and generates mock rules\n\nBEHAVIOR:\n- load_from_spec reads JSON from spec_path, parses as OpenAPI spec\n- Supports versions 3.0.0 and 3.1.0 (per SUPPORTED_VERSIONS)\n- Raises OpenAPIError for: unsupported version, missing openapi field, missing paths, invalid JSON, file not found, non-dict spec\n- Each path in spec generates at least one MatchRule with path_pattern matching the spec path (path params {id} become wildcards)\n- Each operation (get/post/etc) generates MatchRule with method field set\n- Response schemas converted to Template objects with content_type from",
+      "committed_files": [
+        "openapi/__init__.py",
+        "openapi/loader.py"
+      ]
+    },
+    "config.schema": {
+      "node_id": "config.schema",
+      "stage_id": "core",
+      "type": "feature",
+      "status": "grounded",
+      "description": "Configuration validation, defaults, and environment variable binding",
+      "protocol_weight": "lean",
+      "interface": {
+        "exports": [
+          "class Config: port: int, host: str, log_level: str, ttl_default: int, max_sessions: int",
+          "def load_config(env: dict[str, str], file_path: str|None) -> Config",
+          "DEFAULT_CONFIG: Config"
+        ],
+        "assumptions": [],
+        "raises": [
+          "ValueError on invalid port or malformed config file"
+        ],
+        "guarantees": [
+          "All fields have default values",
+          "Environment variables override file values"
+        ]
+      },
+      "structural_deps": [],
+      "assumption_deps": [],
+      "suspension_reason": null,
+      "content_file": "content/config.schema.py",
+      "created_at": "2026-04-30T04:13:43.409656Z",
+      "retry_count": 0,
+      "max_retries": 3,
+      "retry_context": [],
+      "metadata": {
+        "tokens": 20,
+        "lines": 6,
+        "content_hash": "c031eff1998ca41c",
+        "first_export_preview": "",
+        "plumbing_summary": "No exports detected",
+        "computed_at": "2026-04-30T04:16:33.087767Z",
+        "iteration_history": [
+          6
+        ],
+        "avg_iterations": 6.0,
+        "chronicle": [
+          {
+            "turn": 4,
+            "actor": "manager",
+            "action": "dispatch",
+            "metadata": {
+              "role": "test_author",
+              "weight": "lean",
+              "session_id": "6a7cfbe0-2040-48fd-b1ad-902e5970c6f4",
+              "attempt_number": 1,
+              "focus_hints": null,
+              "clear_findings": []
+            },
+            "manager_thought": null,
+            "manager_intent": "Highest ready node (config.schema) with no tests yet, dispatch test_author to define contract",
+            "dispatch_seq": 3,
+            "timestamp": "2026-04-30T04:13:43.408947+00:00"
+          },
+          {
+            "turn": 4,
+            "actor": "agent",
+            "action": "return",
+            "metadata": {
+              "status": "provisional",
+              "exports": [
+                "class Config: port: int, host: str, log_level: str, ttl_default: int, max_sessions: int",
+                "def load_config(env: dict[str, str], file_path: str|None) -> Config",
+                "DEFAULT_CONFIG: Config"
+              ],
+              "files_written": [
+                "config.schema.test"
+              ],
+              "pr_note": null,
+              "iterations_used": 4,
+              "tool_usage": {
+                "read_file": 0,
+                "write_file": 1,
+                "delete_file": 0,
+                "rename_file": 0,
+                "edit_file": 0,
+                "edit_files": 0,
+                "run_lint": 0,
+                "grep_content": 0,
+                "list_files": 0,
+                "preview_file": 0,
+                "record_thought": 1,
+                "run_test": 1,
+                "validate_exports": 0,
+                "get_current_state": 0
+              }
+            },
+            "manager_thought": null,
+            "manager_intent": null,
+            "dispatch_seq": 3,
+            "timestamp": "2026-04-30T04:15:03.200390+00:00"
+          },
+          {
+            "turn": 5,
+            "actor": "manager",
+            "action": "commit",
+            "metadata": {
+              "status": "provisional",
+              "reason": "Test contract defined by test_author - test file written, exports validated, node advances to provisional status",
+              "clear_findings": []
+            },
+            "manager_thought": null,
+            "manager_intent": "Finalize test contract for config.schema to enable builder dispatch",
+            "dispatch_seq": 3,
+            "timestamp": "2026-04-30T04:15:06.815491+00:00"
+          },
+          {
+            "turn": 6,
+            "actor": "manager",
+            "action": "dispatch",
+            "metadata": {
+              "role": "builder",
+              "weight": "lean",
+              "session_id": "213a5c8d-342f-4266-951c-ed2a4905420c",
+              "attempt_number": 2,
+              "focus_hints": null,
+              "clear_findings": []
+            },
+            "manager_thought": null,
+            "manager_intent": "Ready provisional node config.schema with test contract defined, dispatching builder to implement",
+            "dispatch_seq": 4,
+            "timestamp": "2026-04-30T04:15:11.853158+00:00"
+          },
+          {
+            "turn": 6,
+            "actor": "agent",
+            "action": "return",
+            "metadata": {
+              "status": "grounded",
+              "exports": [
+                "class Config: port: int, host: str, log_level: str, ttl_default: int, max_sessions: int",
+                "DEFAULT_CONFIG: Config",
+                "def load_config(env: dict[str, str], file_path: str|None) -> Config"
+              ],
+              "files_written": [
+                "config/__init__.py",
+                "config/schema.py"
+              ],
+              "pr_note": "Implemented config.schema per test contract. Created package structure with config/schema.py containing: Config dataclass with default values (port=8080, host='localhost', log_level='info', ttl_default=300, max_sessions=100), DEFAULT_CONFIG module constant, and load_config() function that loads config with priority env vars > file values > defaults. Includes validation for port range (1-65535), JSON file parsing with proper error handling, and environment variable mapping (PORT, HOST, LOG_LEVEL, TTL_DEFAULT, MAX_SESSIONS). All edge cases handled per contract: ValueError on invalid port, malformed JSON, or missing file.",
+              "iterations_used": 6,
+              "tool_usage": {
+                "read_file": 0,
+                "write_file": 2,
+                "delete_file": 0,
+                "rename_file": 0,
+                "edit_file": 0,
+                "edit_files": 0,
+                "run_lint": 1,
+                "grep_content": 0,
+                "list_files": 1,
+                "preview_file": 0,
+                "record_thought": 0,
+                "run_test": 1,
+                "validate_exports": 0,
+                "get_current_state": 1
+              }
+            },
+            "manager_thought": null,
+            "manager_intent": null,
+            "dispatch_seq": 4,
+            "timestamp": "2026-04-30T04:16:32.898701+00:00"
+          }
+        ],
+        "analyst_findings": [],
+        "tool_usage": {
+          "read_file": 0,
+          "write_file": 2,
+          "delete_file": 0,
+          "rename_file": 0,
+          "edit_file": 0,
+          "edit_files": 0,
+          "run_lint": 1,
+          "grep_content": 0,
+          "list_files": 1,
+          "preview_file": 0,
+          "record_thought": 0,
+          "run_test": 1,
+          "validate_exports": 0,
+          "get_current_state": 1
+        }
+      },
+      "metadata_map": {
+        "config/__init__.py": {
+          "tokens": 20,
+          "lines": 6,
+          "content_hash": "c031eff1998ca41c",
+          "first_export_preview": "",
+          "plumbing_summary": "No exports detected",
+          "computed_at": "2026-04-30T04:16:33.076254Z",
+          "iteration_history": [],
+          "avg_iterations": 0.0,
+          "chronicle": [],
+          "analyst_findings": []
+        },
+        "config/schema.py": {
+          "tokens": 360,
+          "lines": 113,
+          "content_hash": "80d6de9e7c0c63e3",
+          "first_export_preview": "class Config:",
+          "plumbing_summary": "Exports: Config, _validate_port, _parse_env_value...",
+          "computed_at": "2026-04-30T04:16:33.080666Z",
+          "iteration_history": [],
+          "avg_iterations": 0.0,
+          "chronicle": [],
+          "analyst_findings": []
+        },
+        "config.schema.py": {
+          "tokens": 20,
+          "lines": 6,
+          "content_hash": "c031eff1998ca41c",
+          "first_export_preview": "",
+          "plumbing_summary": "No exports detected",
+          "computed_at": "2026-04-30T04:16:33.087625Z",
+          "iteration_history": [],
+          "avg_iterations": 0.0,
+          "chronicle": [],
+          "analyst_findings": []
+        }
+      },
+      "view_spec": null,
+      "tags": [],
+      "pr_note": "Implemented config.schema per test contract. Created package structure with config/schema.py containing: Config dataclass with default values (port=8080, host='localhost', log_level='info', ttl_default=300, max_sessions=100), DEFAULT_CONFIG module constant, and load_config() function that loads config with priority env vars > file values > defaults. Includes validation for port range (1-65535), JSON file parsing with proper error handling, and environment variable mapping (PORT, HOST, LOG_LEVEL, TTL_DEFAULT, MAX_SESSIONS). All edge cases handled per contract: ValueError on invalid port, malformed JSON, or missing file.",
+      "test_contract": "TEST CONTRACT: config.schema\n\nFILE STRUCTURE:\n- config/schema.py \u2014 implementation lives here\n\nAPI:\n- class Config: Dataclass with fields port(int), host(str), log_level(str), ttl_default(int), max_sessions(int). All fields have defaults.\n- DEFAULT_CONFIG: Config \u2014 module-level constant with default values\n- def load_config(env: dict[str,str], file_path: str|None) -> Config: Loads config with priority: env vars > file values > defaults\n\nBEHAVIOR:\n- Environment variables override file values, which override DEFAULT_CONFIG\n- Env var names: PORT, HOST, LOG_LEVEL, TTL_DEFAULT, MAX_SESSIONS (mapped to lowercase fields)\n- Port validation: must be integer 1-65535\n- File format: JSON with keys matching field names\n\nEDGES:\n- Invalid port (non-int, negative, >65535) \u2192 ValueError\n- Malformed JSON file \u2192 ValueError\n- Missing file \u2192 ValueError\n- Empty env dict \u2192 uses defaults/file\n- file_path=None \u2192 skips file loading",
+      "committed_files": [
+        "config/__init__.py",
+        "config/schema.py"
+      ]
+    },
+    "core.orchestrator": {
+      "node_id": "core.orchestrator",
+      "stage_id": "integration",
+      "type": "glue",
+      "status": "grounded",
+      "description": "Request processing orchestrator: coordinates matcher, responder, and state",
+      "protocol_weight": "lean",
+      "interface": {
+        "exports": [
+          "class Orchestrator",
+          "def create_orchestrator(matcher: MatcherEngine, responder: ResponderEngine, store: StateStore) -> Orchestrator",
+          "def handle_request(orch: Orchestrator, request: Request) -> Response",
+          "class Orchestrator: Container for matcher, responder, store components",
+          "def create_orchestrator(matcher: MatcherEngine, responder: ResponderEngine, store: StateStore) -> Orchestrator: Factory that wires components",
+          "def handle_request(orch: Orchestrator, request: Request) -> Response: Main request processing flow"
+        ],
+        "assumptions": [
+          "matcher.engine module provides MatcherEngine with match_request method",
+          "responder.engine module provides ResponderEngine and build_response function",
+          "state.store module provides StateStore, create_session, and get_session",
+          "apitypes.core module provides Request, Response, MatchRule, Session classes"
+        ],
+        "raises": [],
+        "guarantees": [
+          "Session created on first request if not provided",
+          "404 response when no match rule found"
+        ]
+      },
+      "structural_deps": [],
+      "assumption_deps": [],
+      "suspension_reason": null,
+      "content_file": "content/core.orchestrator.py",
+      "created_at": "2026-05-01T01:58:28.359992Z",
+      "retry_count": 0,
+      "max_retries": 3,
+      "retry_context": [],
+      "metadata": {
+        "tokens": 407,
+        "lines": 130,
+        "content_hash": "ef81a34c2f0d8eab",
+        "first_export_preview": "class Orchestrator:",
+        "plumbing_summary": "Exports: Orchestrator, __init__, create_orchestrator...",
+        "computed_at": "2026-05-01T02:06:22.380789Z",
+        "iteration_history": [
+          8
+        ],
+        "avg_iterations": 8.0,
+        "chronicle": [
+          {
+            "turn": 10,
+            "actor": "manager",
+            "action": "dispatch",
+            "metadata": {
+              "role": "test_author",
+              "weight": "lean",
+              "session_id": "85ce72e2-8889-437b-be30-cd4421ceb077",
+              "attempt_number": 1,
+              "focus_hints": null,
+              "clear_findings": []
+            },
+            "manager_thought": null,
+            "manager_intent": "Highest ready node is near+glue, dispatch test_author to define test contract first",
+            "dispatch_seq": 6,
+            "timestamp": "2026-05-01T01:58:28.358653+00:00"
+          },
+          {
+            "turn": 10,
+            "actor": "agent",
+            "action": "return",
+            "metadata": {
+              "status": "provisional",
+              "exports": [
+                "class Orchestrator",
+                "def create_orchestrator(matcher: MatcherEngine, responder: ResponderEngine, store: StateStore) -> Orchestrator",
+                "def handle_request(orch: Orchestrator, request: Request) -> Response"
+              ],
+              "files_written": [
+                "core.orchestrator.test"
+              ],
+              "pr_note": "Mode A contract validation complete. Exports are fixed per interface specification. Tests validate the declared surface: create_orchestrator factory, handle_request orchestration flow, and Orchestrator class. Key edge cases: 404 when no match, session creation on first request (with X-Session-ID header in response), session reuse when valid ID provided.",
+              "iterations_used": 13,
+              "tool_usage": {
+                "read_file": 0,
+                "write_file": 2,
+                "delete_file": 0,
+                "rename_file": 0,
+                "edit_file": 0,
+                "edit_files": 0,
+                "run_lint": 0,
+                "grep_content": 0,
+                "list_files": 1,
+                "preview_file": 12,
+                "record_thought": 0,
+                "run_test": 2,
+                "validate_exports": 0,
+                "get_current_state": 0
+              }
+            },
+            "manager_thought": null,
+            "manager_intent": null,
+            "dispatch_seq": 6,
+            "timestamp": "2026-05-01T02:03:45.090879+00:00"
+          },
+          {
+            "turn": 11,
+            "actor": "manager",
+            "action": "commit",
+            "metadata": {
+              "status": "provisional",
+              "reason": "Test contract defined by test_author - exports fixed per interface spec, tests validate declared surface including create_orchestrator factory, handle_request orchestration flow, Orchestrator class, and edge cases (404, session creation/reuse)",
+              "clear_findings": []
+            },
+            "manager_thought": null,
+            "manager_intent": "Finalize test contract for core.orchestrator so builder can implement",
+            "dispatch_seq": 6,
+            "timestamp": "2026-05-01T02:03:57.278322+00:00"
+          },
+          {
+            "turn": 12,
+            "actor": "manager",
+            "action": "dispatch",
+            "metadata": {
+              "role": "builder",
+              "weight": "lean",
+              "session_id": "cff2e187-5957-4ccf-8494-87ee3aa6c1b3",
+              "attempt_number": 2,
+              "focus_hints": null,
+              "clear_findings": []
+            },
+            "manager_thought": null,
+            "manager_intent": "Highest ready node with provisional status, dispatch builder to implement",
+            "dispatch_seq": 7,
+            "timestamp": "2026-05-01T02:04:10.016944+00:00"
+          },
+          {
+            "turn": 12,
+            "actor": "agent",
+            "action": "return",
+            "metadata": {
+              "status": "grounded",
+              "exports": [
+                "class Orchestrator: Container for matcher, responder, store components",
+                "def create_orchestrator(matcher: MatcherEngine, responder: ResponderEngine, store: StateStore) -> Orchestrator: Factory that wires components",
+                "def handle_request(orch: Orchestrator, request: Request) -> Response: Main request processing flow"
+              ],
+              "files_written": [
+                "core/orchestrator.py",
+                "core/__init__.py"
+              ],
+              "pr_note": "Implemented core.orchestrator per test contract. Package structure follows project convention (core/orchestrator.py with core/__init__.py exports). Orchestrator class holds matcher/responder/store components. create_orchestrator factory wires dependencies. handle_request implements the full flow: match request \u2192 404 if no match \u2192 get/create session \u2192 build response \u2192 add X-Session-ID header. Uses importlib pattern consistent with peer modules for type loading.",
+              "iterations_used": 8,
+              "tool_usage": {
+                "read_file": 6,
+                "write_file": 2,
+                "delete_file": 0,
+                "rename_file": 0,
+                "edit_file": 0,
+                "edit_files": 0,
+                "run_lint": 1,
+                "grep_content": 0,
+                "list_files": 1,
+                "preview_file": 0,
+                "record_thought": 0,
+                "run_test": 1,
+                "validate_exports": 0,
+                "get_current_state": 1
+              }
+            },
+            "manager_thought": null,
+            "manager_intent": null,
+            "dispatch_seq": 7,
+            "timestamp": "2026-05-01T02:06:22.165602+00:00"
+          }
+        ],
+        "analyst_findings": [],
+        "tool_usage": {
+          "read_file": 6,
+          "write_file": 2,
+          "delete_file": 0,
+          "rename_file": 0,
+          "edit_file": 0,
+          "edit_files": 0,
+          "run_lint": 1,
+          "grep_content": 0,
+          "list_files": 1,
+          "preview_file": 0,
+          "record_thought": 0,
+          "run_test": 1,
+          "validate_exports": 0,
+          "get_current_state": 1
+        }
+      },
+      "metadata_map": {
+        "core/orchestrator.py": {
+          "tokens": 407,
+          "lines": 130,
+          "content_hash": "ef81a34c2f0d8eab",
+          "first_export_preview": "class Orchestrator:",
+          "plumbing_summary": "Exports: Orchestrator, __init__, create_orchestrator...",
+          "computed_at": "2026-05-01T02:06:22.363923Z",
+          "iteration_history": [],
+          "avg_iterations": 0.0,
+          "chronicle": [],
+          "analyst_findings": []
+        },
+        "core/__init__.py": {
+          "tokens": 17,
+          "lines": 6,
+          "content_hash": "8f74f0f211d8fe0a",
+          "first_export_preview": "",
+          "plumbing_summary": "No exports detected",
+          "computed_at": "2026-05-01T02:06:22.368178Z",
+          "iteration_history": [],
+          "avg_iterations": 0.0,
+          "chronicle": [],
+          "analyst_findings": []
+        },
+        "core.orchestrator.py": {
+          "tokens": 407,
+          "lines": 130,
+          "content_hash": "ef81a34c2f0d8eab",
+          "first_export_preview": "class Orchestrator:",
+          "plumbing_summary": "Exports: Orchestrator, __init__, create_orchestrator...",
+          "computed_at": "2026-05-01T02:06:22.376740Z",
+          "iteration_history": [],
+          "avg_iterations": 0.0,
+          "chronicle": [],
+          "analyst_findings": []
+        }
+      },
+      "view_spec": null,
+      "tags": [],
+      "pr_note": "Implemented core.orchestrator per test contract. Package structure follows project convention (core/orchestrator.py with core/__init__.py exports). Orchestrator class holds matcher/responder/store components. create_orchestrator factory wires dependencies. handle_request implements the full flow: match request \u2192 404 if no match \u2192 get/create session \u2192 build response \u2192 add X-Session-ID header. Uses importlib pattern consistent with peer modules for type loading.",
+      "test_contract": "TEST CONTRACT: core.orchestrator\n\nFILE STRUCTURE:\n- `core/orchestrator.py` \u2014 implementation\n- `core/__init__.py` \u2014 exports Orchestrator, create_orchestrator, handle_request\n\nAPI:\n- class Orchestrator: Container for matcher, responder, store components\n- def create_orchestrator(matcher, responder, store) -> Orchestrator: Factory that wires components\n- def handle_request(orch, request) -> Response: Main request processing flow\n\nBEHAVIOR:\n1. handle_request flow:\n   - Call orch.matcher.match_request(request) to find matching rule\n   - If no match: return Response(status=404, body=b\"Not Found\")\n   - If match found:\n     * Check request.headers for \"X-Session-ID\"\n     * If present: call get_session(orch.store, session_id) to retrieve existing session\n     * If not present or session not found: call create_session(orch.store, ttl_seconds=3600)\n     * Call build_response(orch.responder, match_rule, request, session) to generate response\n     * Add \"X-Session-ID\" header to response with sessio",
+      "committed_files": [
+        "core/orchestrator.py",
+        "core/__init__.py"
+      ]
+    },
+    "http.server": {
+      "node_id": "http.server",
+      "stage_id": "integration",
+      "type": "feature",
+      "status": "grounded",
+      "description": "HTTP server with request routing, middleware chain, and graceful shutdown",
+      "protocol_weight": "lean",
+      "interface": {
+        "exports": [
+          "class HTTPServer",
+          "def create_server(config: Config, handler: Callable[[Request], Response]) -> HTTPServer",
+          "def run_server(server: HTTPServer) -> None",
+          "def shutdown_server(server: HTTPServer) -> None",
+          "class HTTPServer: Core server class with config, handler, is_running, port properties",
+          "def create_server(config: Config, handler: Callable[[Request], Response], **optional_engines) -> HTTPServer: Factory function",
+          "def run_server(server: HTTPServer) -> None: Start listening, blocks until shutdown",
+          "def shutdown_server(server: HTTPServer) -> None: Graceful shutdown allowing in-flight requests"
+        ],
+        "assumptions": [
+          "config provides Config with host, port attributes",
+          "apitypes provides Request and Response classes",
+          "handler is Callable[[Request], Response]"
+        ],
+        "raises": [
+          "IOError on port binding failure"
+        ],
+        "guarantees": [
+          "Graceful shutdown on SIGTERM",
+          "Request timeout after 30 seconds",
+          "Concurrent request handling"
+        ]
+      },
+      "structural_deps": [],
+      "assumption_deps": [],
+      "suspension_reason": null,
+      "content_file": "content/http.server.py",
+      "created_at": "2026-05-01T01:37:29.406088Z",
+      "retry_count": 0,
+      "max_retries": 3,
+      "retry_context": [
+        {
+          "turn": 1,
+          "manager_note": "Test contract established with comprehensive behavioral specs. Builder should implement HTTPServer class with all specified properties and methods."
+        }
+      ],
+      "metadata": {
+        "tokens": 798,
+        "lines": 288,
+        "content_hash": "843ce74c745695e6",
+        "first_export_preview": "class HTTPServer:",
+        "plumbing_summary": "Exports: HTTPServer, __init__, is_running...",
+        "computed_at": "2026-05-01T01:52:03.437398Z",
+        "iteration_history": [
+          7
+        ],
+        "avg_iterations": 7.0,
+        "chronicle": [
+          {
+            "turn": 0,
+            "actor": "manager",
+            "action": "dispatch",
+            "metadata": {
+              "role": "test_author",
+              "weight": "lean",
+              "session_id": "db68c93c-197b-48e8-b303-b4d856e21261",
+              "attempt_number": 1,
+              "focus_hints": null,
+              "clear_findings": []
+            },
+            "manager_thought": null,
+            "manager_intent": "Highest ready node, feature type, no tests yet - dispatch test_author to define contract",
+            "dispatch_seq": 1,
+            "timestamp": "2026-05-01T01:37:29.403325+00:00"
+          },
+          {
+            "turn": 0,
+            "actor": "agent",
+            "action": "return",
+            "metadata": {
+              "status": "provisional",
+              "exports": [
+                "class HTTPServer",
+                "def create_server(config: Config, handler: Callable[[Request], Response]) -> HTTPServer",
+                "def run_server(server: HTTPServer) -> None",
+                "def shutdown_server(server: HTTPServer) -> None"
+              ],
+              "files_written": [
+                "http.server.test"
+              ],
+              "pr_note": "Tests written for http.server module covering all declared exports. Key behavioral specifications for builder:\n\n1. HTTPServer class with properties: config, handler, is_running (bool), port (raises RuntimeError if not running)\n\n2. create_server factory accepts optional engines: matcher_engine, responder_engine, state_store for dependency injection\n\n3. run_server blocks until shutdown, supports port 0 for auto-assignment, exposes assigned port via server.port\n\n4. shutdown_server allows in-flight requests to complete (tested with 200ms delay handler)\n\n5. Request parsing must extract method, path, headers, body from HTTP request\n\n6. Response serialization must include status, headers, body\n\n7. 30-second request timeout guarantee - slow handlers (>30s) should return 408/504 timeout response\n\n8. SIGTERM handling - server.install_signal_handlers() or similar to enable graceful shutdown\n\n9. Middleware chain support via server.add_middleware(wrapper_func) - wrappers execute L",
+              "iterations_used": 13,
+              "tool_usage": {
+                "read_file": 2,
+                "write_file": 2,
+                "delete_file": 0,
+                "rename_file": 0,
+                "edit_file": 0,
+                "edit_files": 0,
+                "run_lint": 0,
+                "grep_content": 1,
+                "list_files": 2,
+                "preview_file": 0,
+                "record_thought": 1,
+                "run_test": 2,
+                "validate_exports": 0,
+                "get_current_state": 0
+              }
+            },
+            "manager_thought": null,
+            "manager_intent": null,
+            "dispatch_seq": 1,
+            "timestamp": "2026-05-01T01:45:24.145920+00:00"
+          },
+          {
+            "turn": 1,
+            "actor": "manager",
+            "action": "commit",
+            "metadata": {
+              "status": "provisional",
+              "reason": "Test contract defined by test_author, ready for builder implementation",
+              "clear_findings": []
+            },
+            "manager_thought": "Test contract established with comprehensive behavioral specs. Builder should implement HTTPServer class with all specified properties and methods.",
+            "manager_intent": "Finalize test contract for http.server so builder can implement",
+            "dispatch_seq": 1,
+            "timestamp": "2026-05-01T01:45:28.695741+00:00"
+          },
+          {
+            "turn": 4,
+            "actor": "manager",
+            "action": "dispatch",
+            "metadata": {
+              "role": "builder",
+              "weight": "lean",
+              "session_id": "17f2789b-3984-497b-9ea8-20cfc31f55bb",
+              "attempt_number": 2,
+              "focus_hints": null,
+              "clear_findings": []
+            },
+            "manager_thought": null,
+            "manager_intent": "http.server is provisional with test contract defined, dispatch builder to implement HTTP server with routing, middleware, and graceful shutdown",
+            "dispatch_seq": 3,
+            "timestamp": "2026-05-01T01:50:09.443778+00:00"
+          },
+          {
+            "turn": 4,
+            "actor": "agent",
+            "action": "return",
+            "metadata": {
+              "status": "grounded",
+              "exports": [
+                "class HTTPServer: Core server class with config, handler, is_running, port properties",
+                "def create_server(config: Config, handler: Callable[[Request], Response], **optional_engines) -> HTTPServer: Factory function",
+                "def run_server(server: HTTPServer) -> None: Start listening, blocks until shutdown",
+                "def shutdown_server(server: HTTPServer) -> None: Graceful shutdown allowing in-flight requests"
+              ],
+              "files_written": [
+                "http/server.py",
+                "http/__init__.py"
+              ],
+              "pr_note": "Implemented http.server package per test contract. Key features:\n\n1. HTTPServer class with properties: config, handler, is_running, port\n2. create_server factory function accepting config, handler, and optional engines\n3. run_server starts the server and blocks until shutdown\n4. shutdown_server performs graceful shutdown waiting for active threads\n\nImplementation details:\n- Uses socket.AF_INET with SO_REUSEADDR\n- HTTP request parsing extracts method, path, headers, and body with Content-Length support\n- HTTP response serialization with status line, headers, and body\n- Concurrent request handling via threading (one thread per connection)\n- 30-second socket timeout for request handling\n- Proper cleanup of threads on shutdown with 5-second timeout per thread\n\nPackage structure follows project convention: http/server.py with http/__init__.py exports.",
+              "iterations_used": 7,
+              "tool_usage": {
+                "read_file": 6,
+                "write_file": 2,
+                "delete_file": 0,
+                "rename_file": 0,
+                "edit_file": 0,
+                "edit_files": 0,
+                "run_lint": 1,
+                "grep_content": 0,
+                "list_files": 1,
+                "preview_file": 0,
+                "record_thought": 0,
+                "run_test": 1,
+                "validate_exports": 0,
+                "get_current_state": 0
+              }
+            },
+            "manager_thought": null,
+            "manager_intent": null,
+            "dispatch_seq": 3,
+            "timestamp": "2026-05-01T01:52:03.240958+00:00"
+          }
+        ],
+        "analyst_findings": [],
+        "tool_usage": {
+          "read_file": 6,
+          "write_file": 2,
+          "delete_file": 0,
+          "rename_file": 0,
+          "edit_file": 0,
+          "edit_files": 0,
+          "run_lint": 1,
+          "grep_content": 0,
+          "list_files": 1,
+          "preview_file": 0,
+          "record_thought": 0,
+          "run_test": 1,
+          "validate_exports": 0,
+          "get_current_state": 0
+        }
+      },
+      "metadata_map": {
+        "http/server.py": {
+          "tokens": 798,
+          "lines": 288,
+          "content_hash": "843ce74c745695e6",
+          "first_export_preview": "class HTTPServer:",
+          "plumbing_summary": "Exports: HTTPServer, __init__, is_running...",
+          "computed_at": "2026-05-01T01:52:03.426014Z",
+          "iteration_history": [],
+          "avg_iterations": 0.0,
+          "chronicle": [],
+          "analyst_findings": []
+        },
+        "http/__init__.py": {
+          "tokens": 24,
+          "lines": 5,
+          "content_hash": "3d68b9cc2abb2558",
+          "first_export_preview": "",
+          "plumbing_summary": "No exports detected",
+          "computed_at": "2026-05-01T01:52:03.429660Z",
+          "iteration_history": [],
+          "avg_iterations": 0.0,
+          "chronicle": [],
+          "analyst_findings": []
+        },
+        "http.server.py": {
+          "tokens": 798,
+          "lines": 288,
+          "content_hash": "843ce74c745695e6",
+          "first_export_preview": "class HTTPServer:",
+          "plumbing_summary": "Exports: HTTPServer, __init__, is_running...",
+          "computed_at": "2026-05-01T01:52:03.435300Z",
+          "iteration_history": [],
+          "avg_iterations": 0.0,
+          "chronicle": [],
+          "analyst_findings": []
+        }
+      },
+      "view_spec": null,
+      "tags": [],
+      "pr_note": "Implemented http.server package per test contract. Key features:\n\n1. HTTPServer class with properties: config, handler, is_running, port\n2. create_server factory function accepting config, handler, and optional engines\n3. run_server starts the server and blocks until shutdown\n4. shutdown_server performs graceful shutdown waiting for active threads\n\nImplementation details:\n- Uses socket.AF_INET with SO_REUSEADDR\n- HTTP request parsing extracts method, path, headers, and body with Content-Length support\n- HTTP response serialization with status line, headers, and body\n- Concurrent request handling via threading (one thread per connection)\n- 30-second socket timeout for request handling\n- Proper cleanup of threads on shutdown with 5-second timeout per thread\n\nPackage structure follows project convention: http/server.py with http/__init__.py exports.",
+      "test_contract": "TEST CONTRACT: http.server\n\nFILE STRUCTURE:\n- http/server.py - implementation\n- http/__init__.py - exports HTTPServer, create_server, run_server, shutdown_server\n\nAPI:\n- class HTTPServer: Core server class with config, handler, is_running, port properties\n- def create_server(config, handler, **optional_engines) -> HTTPServer: Factory function\n- def run_server(server) -> None: Start listening, blocks until shutdown\n- def shutdown_server(server) -> None: Graceful shutdown allowing in-flight requests\n\nBEHAVIOR:\n- Server binds to config.host:config.port (port 0 auto-assigns)\n- run_server raises IOError if port binding fails (e.g., privileged port without permission)\n- run_server raises RuntimeError if server already running\n- shutdown_server raises RuntimeError if server not running\n- Server parses HTTP requests into Request objects (method, path, headers, body)\n- Server serializes handler Response to HTTP response\n- Concurrent request handling via threading\n- Request  ",
+      "committed_files": [
+        "http/server.py",
+        "http/__init__.py"
+      ]
+    },
+    "admin.api.v2": {
+      "node_id": "admin.api.v2",
+      "stage_id": "integration",
+      "type": "glue",
+      "status": "grounded",
+      "description": "Admin HTTP endpoints for runtime rule inspection and modification. Returns a handler function that routes /__admin/* paths to admin operations.",
+      "protocol_weight": "lean",
+      "interface": {
+        "exports": [
+          "def create_admin_handler(matcher, responder, store) -> Callable[[Request], Response]",
+          "ADMIN_PREFIX: str = '/__admin'"
+        ],
+        "assumptions": [
+          "matcher exposes methods: register_rule(), get_rules()",
+          "responder exposes methods: register_template()",
+          "store exposes methods: get_session(), delete_session()"
+        ],
+        "raises": [],
+        "guarantees": [
+          "Handler checks request.path startswith ADMIN_PREFIX before routing",
+          "GET /__admin/rules returns JSON list of registered matcher rules",
+          "POST /__admin/rules accepts JSON body, creates MatchRule, registers via matcher",
+          "DELETE /__admin/sessions/{id} clears session via store.delete_session()",
+          "Non-admin paths return None (caller must handle fallback)"
+        ]
+      },
+      "structural_deps": [],
+      "assumption_deps": [],
+      "suspension_reason": null,
+      "content_file": "content/admin.api.v2.py",
+      "created_at": "2026-05-01T01:45:34.096315Z",
+      "retry_count": 0,
+      "max_retries": 3,
+      "retry_context": [],
+      "metadata": {
+        "tokens": 0,
+        "lines": 1,
+        "content_hash": "e3b0c44298fc1c14",
+        "first_export_preview": "",
+        "plumbing_summary": "No exports detected",
+        "computed_at": "2026-05-01T01:49:59.664304Z",
+        "iteration_history": [
+          20
+        ],
+        "avg_iterations": 20.0,
+        "chronicle": [
+          {
+            "turn": 2,
+            "actor": "manager",
+            "action": "dispatch",
+            "metadata": {
+              "role": "builder",
+              "weight": "lean",
+              "session_id": "2ab06fed-4e9d-411c-b103-827b75a45bf3",
+              "attempt_number": 1,
+              "focus_hints": null,
+              "clear_findings": []
+            },
+            "manager_thought": null,
+            "manager_intent": "Dispatch admin.api.v2 glue node to builder for implementation",
+            "dispatch_seq": 2,
+            "timestamp": "2026-05-01T01:45:34.095258+00:00"
+          },
+          {
+            "turn": 2,
+            "actor": "agent",
+            "action": "return",
+            "metadata": {
+              "status": "grounded",
+              "exports": [
+                "def create_admin_handler(matcher, responder, store) -> Callable[[Request], Response]",
+                "ADMIN_PREFIX: str = '/__admin'"
+              ],
+              "files_written": [
+                "admin/__init__.py",
+                "admin/api/__init__.py",
+                "admin/api/v2.py",
+                "matcher/engine.py",
+                "state/store.py",
+                "admin/api/test_v2.py",
+                "admin.api.v2.test"
+              ],
+              "pr_note": "Implemented admin.api.v2 per interface specification:\n\n1. Created admin/api/v2.py with:\n   - ADMIN_PREFIX constant = '/__admin'\n   - create_admin_handler(matcher, responder, store) -> handler function\n   - Handler routes GET /__admin/rules (returns JSON list)\n   - Handler routes POST /__admin/rules (creates MatchRule, registers via matcher)\n   - Handler routes DELETE /__admin/sessions/{id} (clears session via store)\n   - Non-admin paths return None for fallback handling\n\n2. Added missing methods to dependencies:\n   - matcher/engine.py: Added get_rules() method\n   - state/store.py: Added delete_session() function\n\n3. Created package structure:\n   - admin/__init__.py\n   - admin/api/__init__.py with exports\n   - admin/api/v2.py with implementation\n\nAll tests pass. Package structure follows existing convention (admin/api/v2.py).",
+              "iterations_used": 20,
+              "tool_usage": {
+                "read_file": 7,
+                "write_file": 5,
+                "delete_file": 0,
+                "rename_file": 0,
+                "edit_file": 2,
+                "edit_files": 0,
+                "run_lint": 1,
+                "grep_content": 2,
+                "list_files": 6,
+                "preview_file": 0,
+                "record_thought": 0,
+                "run_test": 3,
+                "validate_exports": 0,
+                "get_current_state": 1
+              }
+            },
+            "manager_thought": null,
+            "manager_intent": null,
+            "dispatch_seq": 2,
+            "timestamp": "2026-05-01T01:49:59.481532+00:00"
+          }
+        ],
+        "analyst_findings": [],
+        "tool_usage": {
+          "read_file": 7,
+          "write_file": 5,
+          "delete_file": 0,
+          "rename_file": 0,
+          "edit_file": 2,
+          "edit_files": 0,
+          "run_lint": 1,
+          "grep_content": 2,
+          "list_files": 6,
+          "preview_file": 0,
+          "record_thought": 0,
+          "run_test": 3,
+          "validate_exports": 0,
+          "get_current_state": 1
+        }
+      },
+      "metadata_map": {
+        "admin/__init__.py": {
+          "tokens": 0,
+          "lines": 1,
+          "content_hash": "e3b0c44298fc1c14",
+          "first_export_preview": "",
+          "plumbing_summary": "No exports detected",
+          "computed_at": "2026-05-01T01:49:59.632241Z",
+          "iteration_history": [],
+          "avg_iterations": 0.0,
+          "chronicle": [],
+          "analyst_findings": []
+        },
+        "admin/api/__init__.py": {
+          "tokens": 9,
+          "lines": 3,
+          "content_hash": "e91b6b8c1e229d16",
+          "first_export_preview": "",
+          "plumbing_summary": "No exports detected",
+          "computed_at": "2026-05-01T01:49:59.635803Z",
+          "iteration_history": [],
+          "avg_iterations": 0.0,
+          "chronicle": [],
+          "analyst_findings": []
+        },
+        "admin/api/v2.py": {
+          "tokens": 359,
+          "lines": 125,
+          "content_hash": "587bbb00285b2db7",
+          "first_export_preview": "def create_admin_handler(matcher: Any, responder: Any, store: Any) -> Callable[[Request], Optional[Response]]",
+          "plumbing_summary": "Exports: create_admin_handler, handler, _handle_get_rules...",
+          "computed_at": "2026-05-01T01:49:59.640413Z",
+          "iteration_history": [],
+          "avg_iterations": 0.0,
+          "chronicle": [],
+          "analyst_findings": []
+        },
+        "matcher/engine.py": {
+          "tokens": 1056,
+          "lines": 254,
+          "content_hash": "5d258fc78b1b2bb3",
+          "first_export_preview": "class CollisionError(Exception):",
+          "plumbing_summary": "Exports: CollisionError, MatcherEngine, __init__...",
+          "computed_at": "2026-05-01T01:49:59.644877Z",
+          "iteration_history": [],
+          "avg_iterations": 0.0,
+          "chronicle": [],
+          "analyst_findings": []
+        },
+        "state/store.py": {
+          "tokens": 426,
+          "lines": 151,
+          "content_hash": "8bb63bfa5cff4679",
+          "first_export_preview": "class _SessionEntry:",
+          "plumbing_summary": "Exports: _SessionEntry, StateStore, __init__...",
+          "computed_at": "2026-05-01T01:49:59.650874Z",
+          "iteration_history": [],
+          "avg_iterations": 0.0,
+          "chronicle": [],
+          "analyst_findings": []
+        },
+        "admin/api/test_v2.py": {
+          "tokens": 750,
+          "lines": 269,
+          "content_hash": "d0843a1e764d2419",
+          "first_export_preview": "class TestAdminPrefix:",
+          "plumbing_summary": "Exports: TestAdminPrefix, test_admin_prefix_is_string, test_admin_prefix_value...",
+          "computed_at": "2026-05-01T01:49:59.656408Z",
+          "iteration_history": [],
+          "avg_iterations": 0.0,
+          "chronicle": [],
+          "analyst_findings": []
+        },
+        "admin.api.v2.test": {
+          "tokens": 737,
+          "lines": 265,
+          "content_hash": "240e30852fdd4449",
+          "first_export_preview": "class TestAdminPrefix:",
+          "plumbing_summary": "Exports: TestAdminPrefix, TestCreateAdminHandler, TestGetRules...",
+          "computed_at": "2026-05-01T01:49:59.660486Z",
+          "iteration_history": [],
+          "avg_iterations": 0.0,
+          "chronicle": [],
+          "analyst_findings": []
+        },
+        "admin.api.v2.py": {
+          "tokens": 0,
+          "lines": 1,
+          "content_hash": "e3b0c44298fc1c14",
+          "first_export_preview": "",
+          "plumbing_summary": "No exports detected",
+          "computed_at": "2026-05-01T01:49:59.664187Z",
+          "iteration_history": [],
+          "avg_iterations": 0.0,
+          "chronicle": [],
+          "analyst_findings": []
+        }
+      },
+      "view_spec": null,
+      "tags": [],
+      "pr_note": "Implemented admin.api.v2 per interface specification:\n\n1. Created admin/api/v2.py with:\n   - ADMIN_PREFIX constant = '/__admin'\n   - create_admin_handler(matcher, responder, store) -> handler function\n   - Handler routes GET /__admin/rules (returns JSON list)\n   - Handler routes POST /__admin/rules (creates MatchRule, registers via matcher)\n   - Handler routes DELETE /__admin/sessions/{id} (clears session via store)\n   - Non-admin paths return None for fallback handling\n\n2. Added missing methods to dependencies:\n   - matcher/engine.py: Added get_rules() method\n   - state/store.py: Added delete_session() function\n\n3. Created package structure:\n   - admin/__init__.py\n   - admin/api/__init__.py with exports\n   - admin/api/v2.py with implementation\n\nAll tests pass. Package structure follows existing convention (admin/api/v2.py).",
+      "test_contract": null,
+      "committed_files": [
+        "admin/__init__.py",
+        "admin/api/__init__.py",
+        "admin/api/v2.py",
+        "matcher/engine.py",
+        "state/store.py",
+        "admin/api/test_v2.py",
+        "admin.api.v2.test"
+      ]
+    },
+    "cli.runner": {
+      "node_id": "cli.runner",
+      "stage_id": "integration",
+      "type": "glue",
+      "status": "grounded",
+      "description": "CLI argument parsing, config loading, and command dispatch",
+      "protocol_weight": "lean",
+      "interface": {
+        "exports": [
+          "def main(argv: list[str]) -> int",
+          "USAGE: str"
+        ],
+        "assumptions": [
+          "config module available for load_config",
+          "system module available for initialize_system",
+          "http module available for run_server",
+          "openapi module available for OpenAPIError"
+        ],
+        "raises": [],
+        "guarantees": [
+          "Exit code 0 on clean shutdown",
+          "Exit code 1 on config error",
+          "Exit code 2 on runtime error"
+        ]
+      },
+      "structural_deps": [],
+      "assumption_deps": [],
+      "suspension_reason": null,
+      "content_file": "content/cli.runner.py",
+      "created_at": "2026-05-01T01:56:42.119156Z",
+      "retry_count": 0,
+      "max_retries": 3,
+      "retry_context": [],
+      "metadata": {
+        "tokens": 578,
+        "lines": 207,
+        "content_hash": "b5585787a2f15481",
+        "first_export_preview": "def _parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]",
+        "plumbing_summary": "Exports: _parse_args, main",
+        "computed_at": "2026-05-01T02:09:14.632029Z",
+        "iteration_history": [
+          12
+        ],
+        "avg_iterations": 12.0,
+        "chronicle": [
+          {
+            "turn": 8,
+            "actor": "manager",
+            "action": "dispatch",
+            "metadata": {
+              "role": "test_author",
+              "weight": "lean",
+              "session_id": "2a8d8e4f-9409-43a2-b2ed-2cd141f3ba27",
+              "attempt_number": 1,
+              "focus_hints": null,
+              "clear_findings": []
+            },
+            "manager_thought": null,
+            "manager_intent": "Dispatch test_author for cli.runner to define test contract before implementation",
+            "dispatch_seq": 5,
+            "timestamp": "2026-05-01T01:56:42.116964+00:00"
+          },
+          {
+            "turn": 8,
+            "actor": "agent",
+            "action": "return",
+            "metadata": {
+              "status": "provisional",
+              "exports": [
+                "def main(argv: list[str]) -> int",
+                "USAGE: str"
+              ],
+              "files_written": [
+                "cli/__init__.py",
+                "cli.runner.test"
+              ],
+              "pr_note": null,
+              "iterations_used": 3,
+              "tool_usage": {
+                "read_file": 0,
+                "write_file": 2,
+                "delete_file": 0,
+                "rename_file": 0,
+                "edit_file": 0,
+                "edit_files": 0,
+                "run_lint": 0,
+                "grep_content": 0,
+                "list_files": 0,
+                "preview_file": 0,
+                "record_thought": 0,
+                "run_test": 1,
+                "validate_exports": 0,
+                "get_current_state": 0
+              }
+            },
+            "manager_thought": null,
+            "manager_intent": null,
+            "dispatch_seq": 5,
+            "timestamp": "2026-05-01T01:58:20.654355+00:00"
+          },
+          {
+            "turn": 9,
+            "actor": "manager",
+            "action": "commit",
+            "metadata": {
+              "status": "provisional",
+              "reason": "Test contract defined by test_author - test file cli.runner.test created, exports defined. Ready for provisional commit.",
+              "clear_findings": []
+            },
+            "manager_thought": null,
+            "manager_intent": "Commit cli.runner test contract to finalize provisional status before builder implementation",
+            "dispatch_seq": 5,
+            "timestamp": "2026-05-01T01:58:24.020508+00:00"
+          },
+          {
+            "turn": 14,
+            "actor": "manager",
+            "action": "dispatch",
+            "metadata": {
+              "role": "builder",
+              "weight": "lean",
+              "session_id": "f7c4b15f-9710-4a70-8285-4874a00a5c21",
+              "attempt_number": 2,
+              "focus_hints": null,
+              "clear_findings": []
+            },
+            "manager_thought": null,
+            "manager_intent": "Implement CLI runner glue code that parses arguments and dispatches to system.init",
+            "dispatch_seq": 8,
+            "timestamp": "2026-05-01T02:06:43.343849+00:00"
+          },
+          {
+            "turn": 14,
+            "actor": "agent",
+            "action": "return",
+            "metadata": {
+              "status": "grounded",
+              "exports": [
+                "def main(argv: list[str]) -> int",
+                "USAGE: str"
+              ],
+              "files_written": [
+                "cli/runner.py"
+              ],
+              "pr_note": "CLI runner implementation with main() function and USAGE string. Supports --config, --port, --host, --spec flags plus --help and --version. Integrates with config.schema for config loading, system.init for initialization, and http.server for running. Properly distinguishes config errors (exit 1) from runtime errors (exit 2).",
+              "iterations_used": 12,
+              "tool_usage": {
+                "read_file": 6,
+                "write_file": 1,
+                "delete_file": 0,
+                "rename_file": 0,
+                "edit_file": 0,
+                "edit_files": 0,
+                "run_lint": 0,
+                "grep_content": 1,
+                "list_files": 1,
+                "preview_file": 0,
+                "record_thought": 0,
+                "run_test": 1,
+                "validate_exports": 0,
+                "get_current_state": 0
+              }
+            },
+            "manager_thought": null,
+            "manager_intent": null,
+            "dispatch_seq": 8,
+            "timestamp": "2026-05-01T02:09:14.460854+00:00"
+          }
+        ],
+        "analyst_findings": [],
+        "tool_usage": {
+          "read_file": 6,
+          "write_file": 1,
+          "delete_file": 0,
+          "rename_file": 0,
+          "edit_file": 0,
+          "edit_files": 0,
+          "run_lint": 0,
+          "grep_content": 1,
+          "list_files": 1,
+          "preview_file": 0,
+          "record_thought": 0,
+          "run_test": 1,
+          "validate_exports": 0,
+          "get_current_state": 0
+        }
+      },
+      "metadata_map": {
+        "cli/runner.py": {
+          "tokens": 578,
+          "lines": 207,
+          "content_hash": "b5585787a2f15481",
+          "first_export_preview": "def _parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]",
+          "plumbing_summary": "Exports: _parse_args, main",
+          "computed_at": "2026-05-01T02:09:14.626076Z",
+          "iteration_history": [],
+          "avg_iterations": 0.0,
+          "chronicle": [],
+          "analyst_findings": []
+        },
+        "cli.runner.py": {
+          "tokens": 578,
+          "lines": 207,
+          "content_hash": "b5585787a2f15481",
+          "first_export_preview": "def _parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]",
+          "plumbing_summary": "Exports: _parse_args, main",
+          "computed_at": "2026-05-01T02:09:14.630890Z",
+          "iteration_history": [],
+          "avg_iterations": 0.0,
+          "chronicle": [],
+          "analyst_findings": []
+        }
+      },
+      "view_spec": null,
+      "tags": [],
+      "pr_note": "CLI runner implementation with main() function and USAGE string. Supports --config, --port, --host, --spec flags plus --help and --version. Integrates with config.schema for config loading, system.init for initialization, and http.server for running. Properly distinguishes config errors (exit 1) from runtime errors (exit 2).",
+      "test_contract": null,
+      "committed_files": [
+        "cli/runner.py"
+      ]
+    },
+    "system.init": {
+      "node_id": "system.init",
+      "stage_id": "integration",
+      "type": "glue",
+      "status": "grounded",
+      "description": "System bootstrap: wire components, load initial rules, start server",
+      "protocol_weight": "lean",
+      "interface": {
+        "exports": [
+          "def initialize_system(config: Config, spec_path: str|None) -> SystemContext",
+          "class SystemContext: matcher: MatcherEngine, responder: ResponderEngine, state: StateStore, server: HTTPServer"
+        ],
+        "assumptions": [
+          "config.schema provides Config class",
+          "apitypes provides Request, Response, MatchRule, Template",
+          "matcher provides MatcherEngine",
+          "responder provides ResponderEngine, register_template, build_response",
+          "state provides StateStore, create_session, get_session, update_session",
+          "http provides HTTPServer, create_server",
+          "openapi provides load_from_spec, OpenAPIError",
+          "admin.api provides create_admin_handler"
+        ],
+        "raises": [
+          "RuntimeError on initialization failure"
+        ],
+        "guarantees": [
+          "All components share consistent state references",
+          "OpenAPI rules loaded before server starts",
+          "Cleanup handlers registered for graceful shutdown"
+        ]
+      },
+      "structural_deps": [],
+      "assumption_deps": [],
+      "suspension_reason": null,
+      "content_file": "content/system.init.py",
+      "created_at": "2026-05-01T01:52:13.116729Z",
+      "retry_count": 0,
+      "max_retries": 3,
+      "retry_context": [],
+      "metadata": {
+        "tokens": 17,
+        "lines": 5,
+        "content_hash": "bcebdd923754b55b",
+        "first_export_preview": "",
+        "plumbing_summary": "No exports detected",
+        "computed_at": "2026-05-01T01:56:32.944805Z",
+        "iteration_history": [
+          27
+        ],
+        "avg_iterations": 27.0,
+        "chronicle": [
+          {
+            "turn": 6,
+            "actor": "manager",
+            "action": "dispatch",
+            "metadata": {
+              "role": "builder",
+              "weight": "lean",
+              "session_id": "2bcad3b9-e652-4f84-9538-7ee0fe391b6a",
+              "attempt_number": 1,
+              "focus_hints": null,
+              "clear_findings": []
+            },
+            "manager_thought": null,
+            "manager_intent": "system.init is ready with all dependencies grounded (http.server, admin.api.v2)",
+            "dispatch_seq": 4,
+            "timestamp": "2026-05-01T01:52:13.109833+00:00"
+          },
+          {
+            "turn": 6,
+            "actor": "agent",
+            "action": "return",
+            "metadata": {
+              "status": "grounded",
+              "exports": [
+                "def initialize_system(config: Config, spec_path: str|None) -> SystemContext",
+                "class SystemContext: matcher: MatcherEngine, responder: ResponderEngine, state: StateStore, server: HTTPServer"
+              ],
+              "files_written": [
+                "system/__init__.py",
+                "system/init.py",
+                "system/test_init.py",
+                "system.init.test"
+              ],
+              "pr_note": "Implementation of system.init node for system bootstrap. Creates SystemContext dataclass and initialize_system() function that wires all components together:\n\n1. Creates StateStore, MatcherEngine, ResponderEngine instances\n2. Loads OpenAPI spec and registers rules/templates if spec_path provided\n3. Creates admin handler for /__admin/* endpoints\n4. Creates main request handler with session management\n5. Creates HTTPServer with the request handler\n6. Registers cleanup handlers (atexit and signal handlers) for graceful shutdown\n\nPackage structure: system/__init__.py and system/init.py following the established package conventions. All dependencies properly imported from existing packages.",
+              "iterations_used": 27,
+              "tool_usage": {
+                "read_file": 22,
+                "write_file": 4,
+                "delete_file": 0,
+                "rename_file": 0,
+                "edit_file": 0,
+                "edit_files": 0,
+                "run_lint": 3,
+                "grep_content": 2,
+                "list_files": 6,
+                "preview_file": 0,
+                "record_thought": 0,
+                "run_test": 4,
+                "validate_exports": 0,
+                "get_current_state": 0
+              }
+            },
+            "manager_thought": null,
+            "manager_intent": null,
+            "dispatch_seq": 4,
+            "timestamp": "2026-05-01T01:56:32.722139+00:00"
+          }
+        ],
+        "analyst_findings": [],
+        "tool_usage": {
+          "read_file": 22,
+          "write_file": 4,
+          "delete_file": 0,
+          "rename_file": 0,
+          "edit_file": 0,
+          "edit_files": 0,
+          "run_lint": 3,
+          "grep_content": 2,
+          "list_files": 6,
+          "preview_file": 0,
+          "record_thought": 0,
+          "run_test": 4,
+          "validate_exports": 0,
+          "get_current_state": 0
+        }
+      },
+      "metadata_map": {
+        "system/__init__.py": {
+          "tokens": 17,
+          "lines": 5,
+          "content_hash": "bcebdd923754b55b",
+          "first_export_preview": "",
+          "plumbing_summary": "No exports detected",
+          "computed_at": "2026-05-01T01:56:32.911209Z",
+          "iteration_history": [],
+          "avg_iterations": 0.0,
+          "chronicle": [],
+          "analyst_findings": []
+        },
+        "system/init.py": {
+          "tokens": 444,
+          "lines": 150,
+          "content_hash": "fc79e656cb579264",
+          "first_export_preview": "class SystemContext:",
+          "plumbing_summary": "Exports: SystemContext, initialize_system, request_handler...",
+          "computed_at": "2026-05-01T01:56:32.920580Z",
+          "iteration_history": [],
+          "avg_iterations": 0.0,
+          "chronicle": [],
+          "analyst_findings": []
+        },
+        "system/test_init.py": {
+          "tokens": 752,
+          "lines": 259,
+          "content_hash": "f2df00670c3dd6f9",
+          "first_export_preview": "class TestSystemContext:",
+          "plumbing_summary": "Exports: TestSystemContext, test_system_context_has_required_fields, test_system_context_creation...",
+          "computed_at": "2026-05-01T01:56:32.934442Z",
+          "iteration_history": [],
+          "avg_iterations": 0.0,
+          "chronicle": [],
+          "analyst_findings": []
+        },
+        "system.init.test": {
+          "tokens": 752,
+          "lines": 259,
+          "content_hash": "f2df00670c3dd6f9",
+          "first_export_preview": "class TestSystemContext:",
+          "plumbing_summary": "Exports: TestSystemContext, TestInitializeSystem",
+          "computed_at": "2026-05-01T01:56:32.939983Z",
+          "iteration_history": [],
+          "avg_iterations": 0.0,
+          "chronicle": [],
+          "analyst_findings": []
+        },
+        "system.init.py": {
+          "tokens": 17,
+          "lines": 5,
+          "content_hash": "bcebdd923754b55b",
+          "first_export_preview": "",
+          "plumbing_summary": "No exports detected",
+          "computed_at": "2026-05-01T01:56:32.944262Z",
+          "iteration_history": [],
+          "avg_iterations": 0.0,
+          "chronicle": [],
+          "analyst_findings": []
+        }
+      },
+      "view_spec": null,
+      "tags": [],
+      "pr_note": "Implementation of system.init node for system bootstrap. Creates SystemContext dataclass and initialize_system() function that wires all components together:\n\n1. Creates StateStore, MatcherEngine, ResponderEngine instances\n2. Loads OpenAPI spec and registers rules/templates if spec_path provided\n3. Creates admin handler for /__admin/* endpoints\n4. Creates main request handler with session management\n5. Creates HTTPServer with the request handler\n6. Registers cleanup handlers (atexit and signal handlers) for graceful shutdown\n\nPackage structure: system/__init__.py and system/init.py following the established package conventions. All dependencies properly imported from existing packages.",
+      "test_contract": null,
+      "committed_files": [
+        "system/__init__.py",
+        "system/init.py",
+        "system/test_init.py",
+        "system.init.test"
+      ]
+    }
+  },
+  "dependencies": [
+    {
+      "from_node": "core.orchestrator",
+      "to_node": "types.core",
+      "type": "structural",
+      "verified": true,
+      "discovered_by": null,
+      "turn": null
+    },
+    {
+      "from_node": "core.orchestrator",
+      "to_node": "matcher.engine",
+      "type": "structural",
+      "verified": true,
+      "discovered_by": null,
+      "turn": null
+    },
+    {
+      "from_node": "core.orchestrator",
+      "to_node": "responder.engine",
+      "type": "structural",
+      "verified": true,
+      "discovered_by": null,
+      "turn": null
+    },
+    {
+      "from_node": "core.orchestrator",
+      "to_node": "state.store",
+      "type": "structural",
+      "verified": true,
+      "discovered_by": null,
+      "turn": null
+    },
+    {
+      "from_node": "matcher.parser",
+      "to_node": "types.core",
+      "type": "structural",
+      "verified": true,
+      "discovered_by": null,
+      "turn": null
+    },
+    {
+      "from_node": "matcher.engine",
+      "to_node": "types.core",
+      "type": "structural",
+      "verified": true,
+      "discovered_by": null,
+      "turn": null
+    },
+    {
+      "from_node": "matcher.engine",
+      "to_node": "matcher.parser",
+      "type": "structural",
+      "verified": true,
+      "discovered_by": null,
+      "turn": null
+    },
+    {
+      "from_node": "responder.template",
+      "to_node": "types.core",
+      "type": "structural",
+      "verified": true,
+      "discovered_by": null,
+      "turn": null
+    },
+    {
+      "from_node": "responder.engine",
+      "to_node": "types.core",
+      "type": "structural",
+      "verified": true,
+      "discovered_by": null,
+      "turn": null
+    },
+    {
+      "from_node": "responder.engine",
+      "to_node": "responder.template",
+      "type": "structural",
+      "verified": true,
+      "discovered_by": null,
+      "turn": null
+    },
+    {
+      "from_node": "responder.engine",
+      "to_node": "state.store",
+      "type": "structural",
+      "verified": true,
+      "discovered_by": null,
+      "turn": null
+    },
+    {
+      "from_node": "state.store",
+      "to_node": "types.core",
+      "type": "structural",
+      "verified": true,
+      "discovered_by": null,
+      "turn": null
+    },
+    {
+      "from_node": "openapi.loader",
+      "to_node": "types.core",
+      "type": "structural",
+      "verified": true,
+      "discovered_by": null,
+      "turn": null
+    },
+    {
+      "from_node": "openapi.loader",
+      "to_node": "matcher.parser",
+      "type": "structural",
+      "verified": true,
+      "discovered_by": null,
+      "turn": null
+    },
+    {
+      "from_node": "http.server",
+      "to_node": "types.core",
+      "type": "structural",
+      "verified": true,
+      "discovered_by": null,
+      "turn": null
+    },
+    {
+      "from_node": "http.server",
+      "to_node": "config.schema",
+      "type": "structural",
+      "verified": true,
+      "discovered_by": null,
+      "turn": null
+    },
+    {
+      "from_node": "admin.api.v2",
+      "to_node": "types.core",
+      "type": "structural",
+      "verified": true,
+      "discovered_by": null,
+      "turn": null
+    },
+    {
+      "from_node": "admin.api.v2",
+      "to_node": "matcher.engine",
+      "type": "structural",
+      "verified": true,
+      "discovered_by": null,
+      "turn": null
+    },
+    {
+      "from_node": "admin.api.v2",
+      "to_node": "responder.engine",
+      "type": "structural",
+      "verified": true,
+      "discovered_by": null,
+      "turn": null
+    },
+    {
+      "from_node": "admin.api.v2",
+      "to_node": "state.store",
+      "type": "structural",
+      "verified": true,
+      "discovered_by": null,
+      "turn": null
+    },
+    {
+      "from_node": "cli.runner",
+      "to_node": "config.schema",
+      "type": "structural",
+      "verified": true,
+      "discovered_by": null,
+      "turn": null
+    },
+    {
+      "from_node": "cli.runner",
+      "to_node": "system.init",
+      "type": "structural",
+      "verified": true,
+      "discovered_by": null,
+      "turn": null
+    },
+    {
+      "from_node": "system.init",
+      "to_node": "types.core",
+      "type": "structural",
+      "verified": true,
+      "discovered_by": null,
+      "turn": null
+    },
+    {
+      "from_node": "system.init",
+      "to_node": "matcher.engine",
+      "type": "structural",
+      "verified": true,
+      "discovered_by": null,
+      "turn": null
+    },
+    {
+      "from_node": "system.init",
+      "to_node": "responder.engine",
+      "type": "structural",
+      "verified": true,
+      "discovered_by": null,
+      "turn": null
+    },
+    {
+      "from_node": "system.init",
+      "to_node": "state.store",
+      "type": "structural",
+      "verified": true,
+      "discovered_by": null,
+      "turn": null
+    },
+    {
+      "from_node": "system.init",
+      "to_node": "openapi.loader",
+      "type": "structural",
+      "verified": true,
+      "discovered_by": null,
+      "turn": null
+    },
+    {
+      "from_node": "system.init",
+      "to_node": "http.server",
+      "type": "structural",
+      "verified": true,
+      "discovered_by": null,
+      "turn": null
+    },
+    {
+      "from_node": "system.init",
+      "to_node": "admin.api.v2",
+      "type": "structural",
+      "verified": true,
+      "discovered_by": null,
+      "turn": null
+    }
+  ],
+  "graveyard": []
+}
