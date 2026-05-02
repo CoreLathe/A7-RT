@@ -1,8 +1,14 @@
-# A7-RT: Runtime for Contractualized Cognition
+## A7-RT: Transactional Build System for AI-Generated Code
 
-A7-RT is a stateless orchestration runtime that treats AI coding agents as ephemeral workers in a transactional build graph. It occupies the gap between exploratory AI assistance (where ambiguity is productive) and production software (where ambiguity is dangerous), ensuring only verified code enters version control.
+A7-RT treats LLMs as unreliable compilers that require supervision. It is a stateless orchestration layer between your repository and AI coding agents, ensuring only verified artifacts enter version control.
 
-Contractualized cognition refers to LLM work governed by executable contracts (interface signatures, assumptions, guarantees) rather than conversational context or prompt engineering. The human provides intent; the system enforces that implementation matches the contract through adversarial verification.
+The system operates on an immutable ledger of work. Each unit of generation, whether a function, module, or interface, must declare its contract before execution. Agents work in isolated ephemeral environments (ShadowFS) where writes are staged but not committed. Verification happens through hard tests, compilation, and schema validation before any change touches your source tree.
+
+The transaction boundary is strict. Intent flows from human to system; evidence flows from agent to ledger. No state persists between turns. No context accumulates to rot. The graph tracks what is grounded and what remains vapor, propagating failure automatically so the manager never plans against poisoned assumptions.
+
+In practice, you describe a capability boundary. A7-RT dispatches an agent with constrained context, receives structured output, validates against the declared contract, and either promotes the result to grounded status or suspends it with specific failure attribution. The repository remains untouched until the verification gate passes.
+
+This is infrastructure for the transition between experimentation, where ambiguity is productive, and production, where only proven code survives.
 
 ## The Post-Exploration Gap
 
