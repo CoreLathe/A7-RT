@@ -1,7 +1,7 @@
 # A7-RT CLI Usage Guide
 
 **Audience:** Engineers and LLM agents using A7-RT via command line  
-**Scope:** CLI package (`a7-rt` command or `python -m a7_rt_core.cli`) — TUI viewer not covered  
+**Scope:** CLI package (`a7-rt` command or `python -m a7_rt_core.cli`) 
 **Status:** Current as of A7-RT core implementation
 
 > **Note on command syntax:** After `pip install -e .`, use `a7-rt` (or `a7rt`). For development without installation, use `python -m a7_rt_core.cli` from the project root.
@@ -230,7 +230,7 @@ a7-rt stage /tmp/s --stage-id=api-v2 --name="API Layer"
 
 ### `run` — Headless Execution
 
-Run an A7-RT session without the TUI.
+Run an A7-RT session.
 
 ```bash
 a7-rt run <session-path> [options]
