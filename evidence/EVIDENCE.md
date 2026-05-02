@@ -72,7 +72,7 @@ Eight feature nodes, 29 structural dependencies. No glue, this is pure library c
 | Reasoning | 14,310 |
 | **Grand total** | **~3.26M** |
 
-At OpenRouter pricing for Kimi K2.5 (~$0.13/M input, ~$0.65/M output), the entire core layer—including type definitions, parsing engines, matching logic, templating, state management, and OpenAPI loading—cost less than a coffee. Context caching reduced effective input costs by nearly half.
+At OpenRouter pricing for Kimi K2.5 (~$0.13/M input, ~$0.65/M output), the entire core layer including type definitions, parsing engines, matching logic, templating, state management, and OpenAPI loading. Context caching reduced effective input costs by nearly half.
 
 ## Turn-by-Turn Narrative
 
@@ -80,22 +80,22 @@ The harness operates in discrete turns. Each turn, the manager receives a BoardV
 
 ### Turns 0–3: `types.core`
 
-**Turn 0.** Session initialized. Lifecycle `new`. Manager observes `types.core` as highest ready node—no dependencies, no tests yet. Dispatches **test_author** with role instruction: Mode A detected (exports populated: `class Request`, `class Response`, `class MatchRule`, `class Template`, `class Session`).
+**Turn 0.** Session initialized. Lifecycle `new`. Manager observes `types.core` as highest ready node with no dependencies or tests yet. Dispatches **test_author** with role instruction: Mode A detected (exports populated: `class Request`, `class Response`, `class MatchRule`, `class Template`, `class Session`).
 
 The test author receives:
 - Target node with populated `interface.exports`
-- Structural dep interfaces (empty—this is the root)
-- Existing stage structure (empty—first mover)
+- Structural dep interfaces (empty, this is the root)
+- Existing stage structure (empty, first mover)
 
 It writes `types.core.test`, populates `test_contract` with FILE STRUCTURE and API specifications, and submits PR with `status=provisional`. Harness auto-validates schema. Status advances: `near` → `provisional`.
 
 **Turn 2.** `types.core` provisional with test contract. Manager dispatches **builder** with instruction: implement core domain types per declared exports.
 
-Builder receives the same view minus test files. It implements `types/core.py` with dataclass definitions per the contract. Tests execute via harness `run_test()`—all pass. Harness auto-validates execution, auto-commits files. Status advances: `provisional` → `grounded`. 55 iterations internal to the subagent; the harness counts only one manager turn.
+Builder receives the same view minus test files. It implements `types/core.py` with dataclass definitions per the contract. Tests execute via harness `run_test()` all pass. Harness auto-validates execution, auto-commits files. Status advances: `provisional` → `grounded`. 55 iterations internal to the subagent; the harness counts only one manager turn.
 
 ### Turns 4–7: `config.schema`
 
-**Turn 4.** `types.core` grounded. `config.schema` now highest ready—no structural deps (bootstraps from environment). Same pattern: test_author dispatches first (Turn 4), defines contract for configuration loading. Builder implements (Turn 6). Auto-validated, auto-committed. Node grounded.
+**Turn 4.** `types.core` grounded. `config.schema` now highest ready with no structural deps (bootstraps from environment). Same pattern: test_author dispatches first (Turn 4), defines contract for configuration loading. Builder implements (Turn 6). Auto-validated, auto-committed. Node grounded.
 
 ### Turns 8–15: Matching Pipeline
 
@@ -107,7 +107,7 @@ Notice: no manager intervention required for the dependency chain. The harness r
 
 ### Turns 16–26: Response Pipeline
 
-**Turn 16.** `responder.template` ready. Variable substitution engine for mock responses. **Turn 20.** `responder.engine` ready—first fan-in node, depends on template, types, and state. Builder must coordinate three imports. Implements response building logic.
+**Turn 16.** `responder.template` ready. Variable substitution engine for mock responses. **Turn 20.** `responder.engine` ready, first fan-in node, depends on template, types, and state. Builder must coordinate three imports. Implements response building logic.
 
 **Turn 24.** `state.store` ready. In-memory session storage with TTL. Implements `create_session`, `get_session`, `cleanup_expired`. Builder observes package convention from siblings, uses `state/store.py`.
 
@@ -121,7 +121,7 @@ Notice: no manager intervention required for the dependency chain. The harness r
 
 ### Dependency Enforcement
 
-The graph had 29 edges. The harness never dispatched a node before its dependencies grounded. When `responder.engine` (3 deps) became ready, all three dependencies were already `grounded` with committed files. No "works on my machine"—the invariant is structural.
+The graph had 29 edges. The harness never dispatched a node before its dependencies grounded. When `responder.engine` (3 deps) became ready, all three dependencies were already `grounded` with committed files. No "works on my machine", the invariant is structural.
 
 ### Mode Discrimination
 
@@ -132,11 +132,11 @@ All 8 nodes were Mode A (exports populated). The test_author never attempted to 
 
 ### Transactional State
 
-Every subagent worked in ShadowFS. No file touched the working tree until `run_test()` passed and the harness auto-committed. Failed iterations (syntax errors, import failures) stayed in shadow—visible in telemetry, invisible to git.
+Every subagent worked in ShadowFS. No file touched the working tree until `run_test()` passed and the harness auto-committed. Failed iterations (syntax errors, import failures) stayed in shadow, visible in telemetry, invisible to git.
 
 ### The Anti-Drift Contract
 
-The builder never saw test files. The test author never saw implementation. Both saw the same `interface.exports`. When the builder implemented `MatcherEngine` with a slightly different method name, the test failed, the harness rejected the commit, and the builder iterated. The contract was the oracle—not human judgment, not conversational pleading.
+The builder never saw test files. The test author never saw implementation. Both saw the same `interface.exports`. When the builder implemented `MatcherEngine` with a slightly different method name, the test failed, the harness rejected the commit, and the builder iterated. The contract was the oracle and not human judgment, not conversational pleading.
 
 ## The Output
 
@@ -188,7 +188,7 @@ Every module:
 
 ### Dispatch Efficiency
 
-The harness issued 16 dispatches (8 test_author + 8 builder) across 32 turns. Each node required exactly two dispatches: one to establish the contract, one to implement. No re-dispatches due to drift, no analyst interventions for clarification. The adversarial separation—test author defines, builder implements blind—produced correct implementations on first attempt for 7 of 8 nodes. One node (`responder.engine`) required builder redispatch due to test contract refinement, consuming 4 additional API calls.
+The harness issued 16 dispatches (8 test_author + 8 builder) across 32 turns. Each node required exactly two dispatches: one to establish the contract, one to implement. No re-dispatches due to drift, no analyst interventions for clarification. The adversarial separated test author defines, builder implements blind whichproduced correct implementations on first attempt for 7 of 8 nodes. One node (`responder.engine`) required builder redispatch due to test contract refinement, consuming 4 additional API calls.
 
 The cost is not the point. The point is predictability: 32 turns, bounded context, no drift. You know what you built, why it works, and that it composes.
 
@@ -207,7 +207,7 @@ After the harness grounded all 8 nodes, we performed a manual audit comparing co
 | Behavioral Guarantees | 95% |
 | **Overall Compliance** | **89% - Strong with minor deviations** |
 
-The implementation is solid and functional. The primary deviation is a consistent functional-programming style interface in two modules where the spec implied object-oriented method signatures. At the stated zoom level—with explicit room for interpretation—this is a valid architectural choice that satisfies all functional requirements.
+The implementation is solid and functional. The primary deviation is a consistent functional-programming style interface in two modules where the spec implied object-oriented method signatures. At the stated zoom level, with explicit room for interpretation, this is a valid architectural choice that satisfies all functional requirements.
 
 ---
 
@@ -298,7 +298,7 @@ Same structural pattern as `responder.engine`. The spec defines methods taking `
 | **Thread Safety** | Thread-safe operations | `threading.Lock()` used | ✅ |
 | **Isolation** | Namespace isolation | `namespace` param in `__init__` | ✅ |
 
-**Notable:** `responder.engine` declares a structural dependency on `state.store` but does not import it directly. It receives `Session` objects (from `types.core`) that were retrieved by the caller. This dependency is **conceptual/logical**—the engine works with session data that originates from the store, but the orchestrator mediates the relationship.
+**Notable:** `responder.engine` declares a structural dependency on `state.store` but does not import it directly. It receives `Session` objects (from `types.core`) that were retrieved by the caller. This dependency is **conceptual/logical**.  The engine works with session data that originates from the store, but the orchestrator mediates the relationship.
 
 #### `openapi.loader` ✅ COMPLIANT
 
@@ -395,7 +395,7 @@ This section documents the completion of the 5-node integration layer, connectin
    └──────────────┘        └─────────────────┘      └─────────────────┘
 ```
 
-Five integration nodes, 18 structural dependencies. All dependencies point to the sealed core layer—no cycles, no orphans. The graph completes the "syscall boundary" pattern: pure logic below, I/O and composition above.
+Five integration nodes, 18 structural dependencies. All dependencies point to the sealed core layer with no cycles or orphans. The graph completes the "syscall boundary" pattern: pure logic below, I/O and composition above.
 
 ## Execution Telemetry
 
@@ -418,7 +418,7 @@ Five integration nodes, 18 structural dependencies. All dependencies point to th
 | Reasoning | 20,270 |
 | **Grand total** | **~3.9M** |
 
-At OpenRouter pricing for Kimi K2.5 (~$0.13/M input, ~$0.65/M output), the entire integration layer—including HTTP server, admin API, CLI runner, orchestrator, and system bootstrap—cost less than a large coffee. Context caching achieved 87% deduplication rate, significantly reducing effective input costs.
+At OpenRouter pricing for Kimi K2.5 (~$0.13/M input, ~$0.65/M output), the entire integration layer including HTTP server, admin API, CLI runner, orchestrator, and system bootstrap cost less than a large coffee. Context caching achieved 87% deduplication rate, significantly reducing effective input costs.
 
 ## Turn-by-Turn Narrative
 
@@ -426,7 +426,7 @@ At OpenRouter pricing for Kimi K2.5 (~$0.13/M input, ~$0.65/M output), the entir
 
 **Turn 0.** Integration stage initialized. Lifecycle `new`. Three nodes ready: `http.server`, `admin.api.v2`, `core.orchestrator`. Manager dispatches **test_author** to `http.server` (highest ready, feature type, most complex).
 
-**Turn 2.** `http.server` provisional with test contract. Manager dispatches **builder**. Implementation requires `types.core` and `config.schema` from sealed core layer—both grounded, imports verified.
+**Turn 2.** `http.server` provisional with test contract. Manager dispatches **builder**. Implementation requires `types.core` and `config.schema` from sealed core layer.  Both grounded, imports verified.
 
 **Turn 3.** `admin.api.v2` dispatched directly as glue node (Mode B, no tests required). Builder implements admin handler factory using core layer's `MatcherEngine`, `ResponderEngine`, `StateStore`.
 
@@ -434,7 +434,7 @@ At OpenRouter pricing for Kimi K2.5 (~$0.13/M input, ~$0.65/M output), the entir
 
 **Turn 4–5.** `http.server` grounded. HTTPServer implementation complete with graceful shutdown, concurrent request handling, and 30-second timeout guarantees.
 
-**Turn 6.** `system.init` becomes ready. This is the central wiring node—depends on all core layer nodes plus `http.server` and `admin.api.v2`. Dispatched as glue node.
+**Turn 6.** `system.init` becomes ready. This is the central wiring node whcih epends on all core layer nodes plus `http.server` and `admin.api.v2`. Dispatched as glue node.
 
 **Turn 7.** `system.init` grounded. Bootstrap logic implemented: config loading, component wiring, OpenAPI rule loading, signal handlers for graceful shutdown.
 
@@ -442,13 +442,13 @@ At OpenRouter pricing for Kimi K2.5 (~$0.13/M input, ~$0.65/M output), the entir
 
 **Turn 9–10.** `cli.runner` dispatched. Glue node for argument parsing and command dispatch. Implements `main(argv: list[str]) -> int` with proper exit codes.
 
-**Turn 11–13.** `core.orchestrator` dispatched. The heart of request processing—coordinates matcher, responder, and state. Implements session creation on first request, 404 responses for unmatched routes.
+**Turn 11–13.** `core.orchestrator` dispatched. The heart of request processing which coordinates matcher, responder, and state. Implements session creation on first request, 404 responses for unmatched routes.
 
 ### Turns 14–16: Completion
 
 **Turn 14–15.** All five integration nodes grounded. `cli.runner` final implementation committed with proper exit code handling.
 
-**Turn 16.** No ready nodes remain. All dependencies satisfied. Manager emits **SEAL** action. Stage `integration` sealed. Both stages (core + integration) now complete—13 nodes total.
+**Turn 16.** No ready nodes remain. All dependencies satisfied. Manager emits **SEAL** action. Stage `integration` sealed. Both stages (core + integration) now complete with 13 nodes total.
 
 ## What the Harness Did
 
@@ -458,7 +458,7 @@ Three of five nodes were **glue** (`cli.runner`, `admin.api.v2`, `system.init`).
 
 ### Dependency Chain Verification
 
-The `system.init` node has 8 dependencies—most complex in the graph. The harness verified all were grounded before dispatch:
+The `system.init` node has 8 dependencies that are the most complex in the graph. The harness verified all were grounded before dispatch:
 - `types.core` ✅ (sealed)
 - `matcher.engine` ✅ (sealed)
 - `responder.engine` ✅ (sealed)
@@ -469,7 +469,7 @@ The `system.init` node has 8 dependencies—most complex in the graph. The harne
 
 ### Cross-Stage Composition
 
-The integration layer imports from the sealed core layer using the same `importlib` pattern established in Stage 1. The harness's `DISPATCH` mechanism respects stage boundaries—core nodes were never re-dispatched, their interfaces were read-only for integration builders.
+The integration layer imports from the sealed core layer using the same `importlib` pattern established in Stage 1. The harness's `DISPATCH` mechanism respects stage boundaries.  Core nodes were never re-dispatched, their interfaces were read-only for integration builders.
 
 ## Cost Breakdown by Functionality
 
@@ -551,7 +551,7 @@ System bootstrap with component wiring and cleanup handlers.
 
 ### Spec Issues Resolved
 
-The Stage 1 audit noted a spec typo: `system.init` referenced `admin.api` but the actual node ID was `admin.api.v2`. This was corrected in the dependencies file before Stage 2 execution—the harness correctly wired `system.init` → `admin.api.v2`.
+The Stage 1 audit noted a spec typo: `system.init` referenced `admin.api` but the actual node ID was `admin.api.v2`. This was corrected in the dependencies file before Stage 2 execution. The harness correctly wired `system.init` → `admin.api.v2`.
 
 ## The Output
 
@@ -777,7 +777,7 @@ This does not affect code quality assessment, the 4 actual bugs are in implement
 
 ## Conclusion
 
-The 13-node API mock server is **functionally complete and operational**. Core functionality—pattern matching, templating, session management, configuration, and HTTP serving—works as specified.
+The 13-node API mock server is **functionally complete and operational**. Core functionality: pattern matching, templating, session management, configuration, and HTTP serving work as specified.
 
 **Bugs identified:** 3 minor (admin prefix matching, missing delete_session, None rendering). None prevent core functionality.
 
