@@ -605,5 +605,3 @@ Ensure `a7-rt-core` is installed (`pip install -e .`) or use `python -m a7_rt_co
 
 - `CONTRACTS.md` — Contract semantics and patterns
 - `README.md` — System overview
-- `12-node-spec.json` — Example node specification
-- `12-node-deps.json` — Example dependency graph
