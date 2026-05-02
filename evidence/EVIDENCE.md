@@ -22,10 +22,10 @@ This section documents a complete execution of the A7-RT harness, building the 8
                     │   (0 deps)      │
                     └────────┬────────┘
                              │
-    ┌──────────────┐   ┌─────┴─────┐   ┌─────────────────┐
-    │ matcher.parser│◄─┤ types.core├─►│responder.template│
-    │   (1 dep)    │   │  (0 deps) │   │    (1 dep)      │
-    └──────┬───────┘   └─────┬─────┘   └────────┬────────┘
+    ┌──────────────┐   ┌─────┴─────┐   ┌──────────────────┐
+    │ matcher.parser│◄─┤ types.core├─► │responder.template│
+    │   (1 dep)    │   │  (0 deps) │   │    (1 dep)       │
+    └──────┬───────┘   └─────┬─────┘   └────────┬─────────┘
            │                 │                  │
            └─────────┐       │        ┌─────────┘
                      ▼       │        ▼
