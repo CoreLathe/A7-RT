@@ -32,6 +32,7 @@ dependencies = [
     "tree-sitter",
     "tree-sitter-python",
     "semgrep",
+    "importlib_resources>=5.0; python_version<'3.12'",
 ]
 
 [project.optional-dependencies]
@@ -59,6 +60,10 @@ where = ["src"]
 
 [tool.setuptools.package-dir]
 "" = "src"
+
+# Include data files (roles/, protocols/, config.toml.example, schemas/) in the package
+[tool.setuptools.package-data]
+a7_rt_core = ["data/**/*", "schemas/**/*.json", "schemas/**/*.md"]
 
 [tool.pytest.ini_options]
 testpaths = ["src/a7_rt_core/tests"]

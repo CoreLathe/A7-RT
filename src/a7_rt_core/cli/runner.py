@@ -35,10 +35,6 @@ src_dir = cli_dir.parent.parent.parent  # src/a7_rt_core/cli/ -> src/
 if str(src_dir) not in sys.path:
     sys.path.insert(0, str(src_dir))
 
-# Project root for locating roles/, protocols/, etc.
-# src/a7_rt_core/cli/ -> src/a7_rt_core/ -> src/ -> project root
-core_dir = cli_dir.parent.parent.parent
-
 
 # ---------------------------------------------------------------------------
 # Imports (after path bootstrap)
@@ -50,6 +46,7 @@ from a7_rt_core.core.config import (
     A7Config,
     load_config,
 )
+from a7_rt_core.data import get_protocols_dir, get_roles_dir
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -364,7 +361,7 @@ def _validate_session_path(session_path: str) -> Path:
 # ---------------------------------------------------------------------------
 
 
-def _load_api_key(resolved_core_dir: Path, config: Optional[A7Config] = None) -> str:
+def _load_api_key(config: Optional[A7Config] = None) -> str:
     """
     Resolve API key using the config system.
 
@@ -374,7 +371,6 @@ def _load_api_key(resolved_core_dir: Path, config: Optional[A7Config] = None) ->
       3. Project-level .a7/key file
       4. User-level ~/.a7/key file
       5. Legacy OPENROUTER_API_KEY env var (fallback)
-      6. core_dir/openrouter-key file (legacy fallback)
 
     Returns the key string, or "" if not found anywhere.
     """
@@ -384,16 +380,11 @@ def _load_api_key(resolved_core_dir: Path, config: Optional[A7Config] = None) ->
             key = config.resolve_api_key(provider_name)
             if key:
                 return key
-    else:
-        # Fallback to legacy env var
-        key = os.environ.get("OPENROUTER_API_KEY", "").strip()
-        if key:
-            return key
 
-    # Legacy fallback: core_dir/openrouter-key
-    key_file = resolved_core_dir / "openrouter-key"
-    if key_file.exists():
-        return key_file.read_text(encoding="utf-8").strip()
+    # Fallback to legacy env var
+    key = os.environ.get("OPENROUTER_API_KEY", "").strip()
+    if key:
+        return key
 
     return ""
 
@@ -858,12 +849,11 @@ def run_headless(argv: list[str]) -> None:
     )
 
     # ── Load API key ─────────────────────────────────────────────────────────
-    api_key = _load_api_key(core_dir, config=config)
+    api_key = _load_api_key(config=config)
     if not api_key:
         print(
             "error: no API key found.\n"
             "       Set your provider's API key environment variable (e.g., OPENROUTER_API_KEY), or\n"
-            f"       create {core_dir / 'openrouter-key'} with the key on one line, or\n"
             f"       create {session_path / '.a7' / 'key'} for session-local key.",
             file=sys.stderr,
         )
@@ -884,8 +874,8 @@ def run_headless(argv: list[str]) -> None:
 
     # ── Wire harness components ──────────────────────────────────────────────
     try:
-        roles_dir = core_dir / "roles"
-        protocols_dir = core_dir / "protocols"
+        roles_dir = get_roles_dir()
+        protocols_dir = get_protocols_dir()
 
         # Determine base URL from configured provider
         # Use manager model's provider to determine base_url

@@ -21,11 +21,14 @@ Protocol weight injection:
 
 Usage (as harness subagent_hook):
     from openai import OpenAI
-    from llm_client import LLMClient
+    from a7_rt_core.llm.client import LLMClient
+    from a7_rt_core.llm.subagent import Subagent
+    from a7_rt_core.data import get_roles_dir, get_protocols_dir
+
     client = OpenAI(base_url="https://openrouter.ai/api/v1", api_key="sk-or-...")
     llm = LLMClient(client, model="anthropic/claude-haiku-4.5")
-    agent = Subagent(llm, roles_dir=Path("a7-rt-core/roles"),
-                     protocols_dir=Path("a7-rt-core/protocols"))
+    agent = Subagent(llm, roles_dir=get_roles_dir(),
+                     protocols_dir=get_protocols_dir())
     harness = Harness(repo, manager_hook, agent.as_hook())
 """
 

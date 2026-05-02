@@ -126,21 +126,13 @@ RISC separates memory access from computation. Armature-7 separates contract def
 ### Package Structure
 
 ```
-a7_rt_core/                     # Package root
+a7-rt-core/                     # Project root
 ├── docs/                       # Documentation (project-level)
 │   ├── RESTRUCTURE.md          # Restructure history
 │   ├── test-map.md             # Import mappings
 │   ├── LIVE.md                 # Testing roadmap
 │   └── ...
-├── protocols/                  # Protocol weight definitions
-│   ├── none.md
-│   ├── lean.md
-│   └── full.md
-├── roles/                      # LLM prompts
-│   ├── manager_prompt.md
-│   ├── builder.md
-│   ├── test_author.md
-│   └── analyst.md
+├── evidence/                   # Test sessions and validation data
 └── src/a7_rt_core/             # Package source
     ├── __init__.py             # Version 0.1.0
     ├── agent/                  # Agent execution loop
@@ -160,6 +152,18 @@ a7_rt_core/                     # Package root
     │   ├── models.py           # Pydantic schemas + invariants
     │   ├── graph.py            # Pure graph algorithms
     │   └── config.py           # Hierarchical configuration (.a7 directories)
+    ├── data/                   # Bundled package data
+    │   ├── __init__.py         # Data access utilities (get_roles_dir, get_protocols_dir)
+    │   ├── config.toml.example # Example configuration file
+    │   ├── protocols/          # Protocol weight definitions
+    │   │   ├── none.md
+    │   │   ├── lean.md
+    │   │   └── full.md
+    │   └── roles/              # LLM prompts
+    │       ├── manager_prompt.md
+    │       ├── builder.md
+    │       ├── test_author.md
+    │       └── analyst.md
     ├── harness/                # Core orchestration (mixin architecture)
     │   ├── __init__.py
     │   ├── core.py             # Harness class assembly
@@ -198,6 +202,16 @@ a7_rt_core/                     # Package root
         ├── __init__.py
         ├── exports.py          # Export validation logic
         └── schema.py           # Return schema validation
+```
+
+**Note on Package Data:** The `protocols/` and `roles/` directories are bundled inside the package at `src/a7_rt_core/data/` to ensure reliable access regardless of installation method (editable `pip install -e .` or normal `pip install .`). Access them via:
+
+```python
+from a7_rt_core.data import get_roles_dir, get_protocols_dir, read_role_prompt
+
+roles_dir = get_roles_dir()        # Path to bundled roles
+protocols_dir = get_protocols_dir() # Path to bundled protocols
+builder_prompt = read_role_prompt("builder")  # Read prompt content
 ```
 
 ### Key Interfaces

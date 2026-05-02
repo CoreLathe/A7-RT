@@ -19,10 +19,11 @@ Imports:
                                   circular deps: models ← subagent ← harness)
 
 Usage:
-    from llm_client import LLMClient
-    from a7_engine import A7Engine
+    from a7_rt_core.llm.client import LLMClient
+    from a7_rt_core.llm.a7_engine import A7Engine
+    from a7_rt_core.data import get_protocols_dir
 
-    engine = A7Engine(llm, protocols_dir=Path("a7-rt-core/protocols"))
+    engine = A7Engine(llm, protocols_dir=get_protocols_dir())
     verdict = engine.query(
         question="Is caching the right layer for this?",
         context=analyst_view_dict,
@@ -105,9 +106,7 @@ class A7Engine:
         self._max_tokens = max_tokens
 
         full_path = Path(protocols_dir) / "full.md"
-        self._system_prompt = (
-            full_path.read_text(encoding="utf-8") if full_path.exists() else ""
-        )
+        self._system_prompt = full_path.read_text(encoding="utf-8") if full_path.exists() else ""
         if not self._system_prompt:
             logger.warning(
                 "protocols/full.md not found or empty — engine running without A7 protocol"
@@ -272,9 +271,7 @@ def _parse_verdict(raw: str) -> A7Verdict:
     # Parse confidence with fallback
     confidence_raw = data.get("confidence", "void")
     if confidence_raw not in ("grounded", "provisional", "suspended", "void"):
-        logger.warning(
-            "A7 engine: unknown confidence %r, defaulting to void", confidence_raw
-        )
+        logger.warning("A7 engine: unknown confidence %r, defaulting to void", confidence_raw)
         confidence_raw = "void"
 
     # Extract operation tags (A7 bracketed tags anywhere in verdict or ops list)
