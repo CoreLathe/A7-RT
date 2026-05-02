@@ -14,7 +14,7 @@ A7-RT orchestrates AI agents through a dependency graph with the same rigor as a
 
 - **ShadowFS:** Every agent runs in a hermetic filesystem sandbox. Failed attempts stay in shadow; only verified code reaches your working tree.
 - **Adversarial Verification:** Test authors write contracts and tests. Builders implement against those contracts without reading test files. The harness validates through hard-path execution before any commit.
-- **Ephemeral Context:** The manager LLM receives a computed BoardView and emits exactly one action. Context is discarded after each turn. The system never accumulates conversational drift or rotting context windows; maximum observed context size was 50KB (1.3% of capacity), discarded immediately after use.
+- **Ephemeral Context:** The manager LLM receives a computed BoardView and emits exactly one action. Context is discarded after each turn. The system never accumulates conversational drift or rotting context windows discarded immediately after use.
 - **Append-Only Ledger:** Project state lives in `master.json`. Interrupt a session today, resume in six months, pay zero catch-up cost.
 
 **The Workflow:**
