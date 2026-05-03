@@ -209,8 +209,8 @@ def run_seed(argv: list[str]) -> int:
                 if node.get("interface")
                 else node.get("guarantees", []),
             },
-            "structural_deps": node.get("deps", []),
-            "assumption_deps": [],
+            "structural_deps": node.get("deps") or node.get("structural_deps", []),
+            "assumption_deps": node.get("assumption_deps", []),
             "content_file": f"{node_id}.py",
             "committed_files": [],
         }
