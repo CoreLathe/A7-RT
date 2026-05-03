@@ -39,7 +39,7 @@ def run_seed(argv: list[str]) -> int:
 
     session_path_str = args.get("session_path")
     if not session_path_str:
-        print("error: session path is required", file=sys.stderr)
+        print("error: session path required", file=sys.stderr)
         print("Usage: python -m cli seed <session-path> [options]", file=sys.stderr)
         return 1
 
