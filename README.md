@@ -1,4 +1,4 @@
-# A7-RT v0.1
+# A7-RT 0.1.0b1
 
 AI coding assistants write code quickly, but they break production systems just as fast. A7-RT is a transactional build system that treats LLM agents as unreliable compilers. It verifies every artifact before it touches your repository.
 
