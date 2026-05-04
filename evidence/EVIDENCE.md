@@ -1,6 +1,6 @@
 ## A7-RT: Transactional Build System for AI-Generated Code
 
-A7-RT treats LLMs as unreliable compilers that require supervision. It is a stateless orchestration layer between your repository and AI coding agents, ensuring only verified artifacts enter version control.
+A7-RT treats LLMs as unreliable compilers that require supervision. It is a amnesiac orchestration layer between your repository and AI coding agents, ensuring only verified artifacts enter version control.
 
 The system operates on an immutable ledger of work. Each unit of generation, whether a function, module, or interface, must declare its contract before execution. Agents work in isolated ephemeral environments (ShadowFS) where writes are staged but not committed. Verification happens through hard tests, compilation, and schema validation before any change touches your source tree.
 
@@ -72,7 +72,7 @@ Eight feature nodes, 29 structural dependencies. No glue, this is pure library c
 | Reasoning | 14,310 |
 | **Grand total** | **~3.26M** |
 
-At OpenRouter pricing for Kimi K2.5 (~$0.13/M input, ~$0.65/M output), the entire core layer including type definitions, parsing engines, matching logic, templating, state management, and OpenAPI loading. Context caching reduced effective input costs by nearly half.
+At OpenRouter pricing for Kimi K2.5 (input/output: $0.60/$3 /M tokens, cache read: $0.10 /M tokens), the entire core layer including type definitions, parsing engines, matching logic, templating, state management, and OpenAPI loading. Context caching reduced effective input costs by nearly half.
 
 ## Turn-by-Turn Narrative
 
