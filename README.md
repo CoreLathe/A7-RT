@@ -1034,4 +1034,4 @@ python -m pytest tests/test_graph.py -v
 
 ## License
 
-Apache 2.0
+Business Source License 1.1
