@@ -11,7 +11,7 @@ AI coding assistants write code quickly, but they break production systems just 
 
 ## What It Is
 
-A7-RT is an amnesiac orchestration runtime for AI coding agents. The manager does not accumulate chat history between turns; the ledger remembers everything. Agents execute as ephemeral workers within a transactional build graph, where each decision is a stateless function of the current board state.  No context windows, no drift, no rotting conversation history. It occupies the gap between exploratory AI (where ambiguity is productive) and production software (where ambiguity is dangerous), ensuring only verified code enters version control.
+A7-RT is an transactional orchestration runtime for AI coding agents. The manager does not accumulate chat history between turns; the ledger remembers everything. Agents execute as ephemeral workers within a transactional build graph, where each decision is a stateless function of the current board state.  No context windows, no drift, no rotting conversation history. It occupies the gap between exploratory AI (where ambiguity is productive) and production software (where ambiguity is dangerous), ensuring only verified code enters version control.
 
 Workflows are governed by executable contracts (interface signatures, assumptions, guarantees) rather than conversational context or prompt engineering. The human provides intent and the system enforces that implementation matches the contract through adversarial verification.
 
