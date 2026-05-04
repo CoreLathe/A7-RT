@@ -1,5 +1,5 @@
 # A7-RT 0.1.0b1
-[CoreLathe Website and Contact](https://corelathe.com)
+[Website and Contact](https://corelathe.com)
 
 [CLI Usage](https://github.com/CoreLathe/A7-RT/blob/main/CLI_USAGE.md)
 
