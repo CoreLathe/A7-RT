@@ -61,7 +61,7 @@ Contracts sit on a spectrum between exploratory intent and mechanical verificati
 
 **Dynamism:** A node is a capability boundary, not a file. It scales from single pure functions to service interfaces. Each node carries its own retry budget and suspension status. The system tracks failure causality through tombstone records and poisons downstream dependents transitively.
 
-A7-RT contracts are not lightweight and can be as cognitively demanding as writing code. The payoff isn't reduced thinking, it's architectural clarity: contracts make dependencies and assumptions explicit, enabling parallel implementation and precise failure attribution. The harness doesn't make building software easier; it makes building software more systematic."
+A7-RT contracts are not lightweight and can be as cognitively demanding as writing code. The payoff isn't reduced thinking, it's architectural clarity: contracts make dependencies and assumptions explicit, enabling parallel implementation and precise failure attribution. The harness doesn't make building software easier; it makes building software more systematic.
 
 
 ---
