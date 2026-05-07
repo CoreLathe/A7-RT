@@ -116,17 +116,6 @@ Suspended nodes are quarantined, not forgotten. Same-node `wild` recurrence trig
 The manager LLM receives a read-only board view, emits one action, and terminates. It does not retain memory between turns. The harness maintains master document state, validates actions against invariants, coordinates subagent execution via ShadowFS, and manages the append-only event log.
 
 ---
-## Armature-7
-
-Armature-7: RISC for Build Orchestration
-
-The "7" is a distillation of a minimal agentic actionset inspired by RISC: reduced instruction sets trade flexibility for reliability. CISC architectures offer hundreds of irregular opcodes for programmer convenience. RISC uses minimal, regular primitives that hardware can pipeline and verify. Armature-7 applies this to LLM orchestration.
-
-The manager uses seven operations: dispatch, validate, commit, suspend, seal, consult, halt. This is the minimum for build systems. Any fewer and you encode control flow in data. Any more and the manager becomes a chatbot.
-
-The result is a deterministic state machine: given a BoardView, exactly one valid action exists. No interpretation. No drift between turns.
-
-RISC separates memory access from computation. Armature-7 separates contract definition (test_author) from contract fulfillment (builder). The rigid frame holds exploration in place until tests fuse it into something solid, like an armature holding clay until the kiln fires it.
 
 ## Architecture
 
